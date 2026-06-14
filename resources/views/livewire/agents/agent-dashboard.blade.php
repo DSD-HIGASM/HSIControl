@@ -7,20 +7,46 @@
 
     <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div class="mb-6 flex items-center justify-between">
+        <div
+            class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
+
             <div class="flex items-center gap-2 text-sm font-secondary text-gray-500">
                 <a href="{{ route('agents.index') }}" wire:navigate
                     class="hover:text-brand-cyan transition-colors flex items-center gap-1 font-bold">
                     <x-heroicon-m-arrow-left class="w-4 h-4" /> Volver al Padrón
                 </a>
-                <x-heroicon-m-chevron-right class="w-4 h-4" />
-                <span class="text-gray-900 font-bold">Legajo #{{ $agent->id }} - {{ mb_strtoupper($agent->last_name) }},
-                    {{ mb_strtoupper($agent->first_name) }}</span>
+                <x-heroicon-m-chevron-right class="w-4 h-4 text-gray-400" />
+                <span class="text-gray-900 font-bold truncate">
+                    Legajo #{{ $agent->id }} - {{ mb_strtoupper($agent->last_name) }},
+                    {{ mb_strtoupper($agent->first_name) }}
+                </span>
             </div>
-            <div class="flex gap-2">
-                <a href="{{ route('agents.print_ficha', $agent->id) }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm font-secondary">
-    <x-heroicon-o-printer class="w-4 h-4 text-gray-500" /> Imprimir Ficha
-</a>
+
+            <div class="flex items-center gap-3">
+
+                @if (($agent->gender) && ($agent->gender->value == 'pendiente'))
+                    <span
+                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-lg shadow-sm">
+                        <x-heroicon-s-exclamation-triangle class="w-4 h-4 text-red-500" />
+                        Género pendiente
+                    </span>
+                @endif
+
+                @if($agent->agentProfessions && $agent->agentProfessions->contains('profession_id', 17))
+            <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-sm"
+                title="Esta jefatura está cargada como profesión y debe corregirse">
+                <x-heroicon-s-user class="w-4 h-4 text-blue-500" />
+                Jefe de Servicio (A Corregir)
+            </span>
+        @endif
+
+                <a href="{{ route('agents.print_ficha', $agent->id) }}" target="_blank"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors shadow-sm font-secondary group">
+                    <x-heroicon-o-printer class="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    Imprimir Ficha
+                </a>
+
             </div>
         </div>
 
@@ -173,7 +199,8 @@
                             <h3
                                 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                                 <x-heroicon-o-academic-cap class="w-5 h-5 text-brand-cyan" /> Profesiones y
-                                Especialidades</h3>
+                                Especialidades
+                            </h3>
                             <button wire:click="$set('showProfModal', true)"
                                 class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
                                 Asignar</button>
@@ -181,20 +208,25 @@
                         <div class="p-5 space-y-4">
                             @forelse($agent->agentProfessions as $vinculacion)
                                 <div class="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
-                                    <div class="flex justify-between items-start mb-3">
+                                    <div class="flex items-start justify-between mb-3">
                                         <div>
                                             <p class="text-sm font-bold text-gray-900 uppercase">
-                                                {{ $vinculacion->profession->name ?? 'Sin nombre' }}</p>
+                                                {{ $vinculacion->profession->name ?? 'Sin nombre' }}
+                                            </p>
                                             @if($vinculacion->specialty)
-                                                <p class="text-xs text-gray-500 font-secondary mt-0.5">Especialidad: <span
-                                                        class="font-bold text-gray-700">{{ $vinculacion->specialty->name }}</span>
+                                                <p class="mt-0.5 text-xs text-gray-500 font-secondary">
+                                                    Especialidad:
+                                                    <span class="font-bold text-gray-700">
+                                                        {{ $vinculacion->specialty->name }}
+                                                    </span>
                                                 </p>
                                             @endif
                                         </div>
                                         <button wire:click="deleteProfession({{ $vinculacion->id }})"
                                             wire:confirm="¿Seguro que deseas eliminar esta profesión?"
-                                            class="text-gray-400 hover:text-brand-pink transition-colors"><x-heroicon-o-trash
-                                                class="w-4 h-4" /></button>
+                                            class="text-gray-400 transition-colors hover:text-brand-pink">
+                                            <x-heroicon-o-trash class="w-4 h-4" />
+                                        </button>
                                     </div>
 
                                     <div class="bg-gray-50 rounded-lg p-3 border border-gray-100 mt-3">
@@ -210,17 +242,21 @@
                                             <div class="space-y-2">
                                                 @foreach($vinculacion->registrations as $reg)
                                                     <div
-                                                        class="flex items-center justify-between text-sm bg-white p-2.5 rounded shadow-sm border border-gray-200">
+                                                        class="flex items-center justify-between p-2.5 text-sm bg-white border border-gray-200 rounded shadow-sm">
                                                         <div>
-                                                            <div class="font-bold text-brand-blue">{{ $reg->number }}</div>
-                                                            <div class="text-[10px] text-gray-500 font-secondary uppercase">
+                                                            <div class="font-bold text-brand-blue">
+                                                                {{ $reg->number }}
+                                                            </div>
+                                                            <div class="text-[10px] text-gray-500 uppercase font-secondary">
                                                                 {{ is_object($reg->scope) ? $reg->scope->value : $reg->scope }} |
-                                                                {{ is_object($reg->type) ? $reg->type->value : $reg->type }}</div>
+                                                                {{ is_object($reg->type) ? $reg->type->value : $reg->type }}
+                                                            </div>
                                                         </div>
                                                         <button wire:click="deleteRegistration({{ $reg->id }})"
                                                             wire:confirm="¿Borrar matrícula?"
-                                                            class="text-gray-400 hover:text-brand-pink"><x-heroicon-o-trash
-                                                                class="w-4 h-4" /></button>
+                                                            class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                            <x-heroicon-o-trash class="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -244,7 +280,8 @@
                         <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <h3
                                 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                <x-heroicon-o-clock class="w-5 h-5 text-gray-400" /> Formación / Residencias</h3>
+                                <x-heroicon-o-clock class="w-5 h-5 text-gray-400" /> Formación / Residencias
+                            </h3>
                             <button wire:click="$set('showResModal', true)"
                                 class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
                                 Cargar</button>
@@ -254,21 +291,29 @@
                                 <div class="space-y-3">
                                     @foreach($agent->residencies as $residency)
                                         <div
-                                            class="border border-gray-200 rounded-lg p-4 bg-white shadow-sm flex justify-between items-start">
+                                            class="flex items-start justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                                             <div>
                                                 <p class="text-sm font-bold text-gray-900 uppercase">
-                                                    {{ $residency->program_name }}</p>
+                                                    {{ $residency->program_name }}
+                                                </p>
                                                 <div class="flex items-center gap-2 mt-1.5">
                                                     <span
-                                                        class="inline-flex items-center rounded-md bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-bold text-brand-cyan-dark ring-1 ring-inset ring-brand-cyan/20 uppercase">{{ $residency->current_year }}</span>
-                                                    <span class="text-[11px] text-gray-500 font-secondary">Unidad HSI: <span
-                                                            class="font-bold">{{ $residency->currentUnit->alias ?? $residency->currentUnit->name ?? 'N/A' }}</span></span>
+                                                        class="inline-flex items-center rounded-md bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-bold text-brand-cyan-dark ring-1 ring-inset ring-brand-cyan/20 uppercase">
+                                                        {{ $residency->current_year }}
+                                                    </span>
+                                                    <span class="text-[11px] text-gray-500 font-secondary">
+                                                        Unidad HSI:
+                                                        <span class="font-bold">
+                                                            {{ $residency->currentUnit->alias ?? $residency->currentUnit->name ?? 'N/A' }}
+                                                        </span>
+                                                    </span>
                                                 </div>
                                             </div>
                                             <button wire:click="deleteResidency({{ $residency->id }})"
                                                 wire:confirm="¿Borrar residencia?"
-                                                class="text-gray-400 hover:text-brand-pink"><x-heroicon-o-trash
-                                                    class="w-4 h-4" /></button>
+                                                class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                <x-heroicon-o-trash class="w-4 h-4" />
+                                            </button>
                                         </div>
                                     @endforeach
                                 </div>
@@ -286,7 +331,8 @@
                         <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <h3
                                 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                <x-heroicon-o-star class="w-5 h-5 text-amber-500" /> Jefaturas de Servicio</h3>
+                                <x-heroicon-o-star class="w-5 h-5 text-amber-500" /> Jefaturas de Servicio
+                            </h3>
                             <button wire:click="$set('showBossModal', true)"
                                 class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
                                 Asignar Jefatura</button>
@@ -296,21 +342,25 @@
                                 <div class="space-y-3">
                                     @foreach($agent->serviceBosses as $boss)
                                         <div
-                                            class="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                                            class="flex items-center justify-between p-3 border rounded-lg bg-amber-50 border-amber-100">
                                             <div class="flex items-center gap-3">
-                                                <div class="bg-amber-100 p-2 rounded-md"><x-heroicon-s-star
-                                                        class="w-5 h-5 text-amber-600" /></div>
+                                                <div class="p-2 rounded-md bg-amber-100">
+                                                    <x-heroicon-s-star class="w-5 h-5 text-amber-600" />
+                                                </div>
                                                 <div>
                                                     <p class="text-sm font-bold text-gray-900 uppercase">
-                                                        {{ $boss->service->name ?? 'Servicio' }}</p>
-                                                    <p class="text-[11px] text-amber-700 font-secondary mt-0.5">Jefe de Servicio
-                                                        Designado</p>
+                                                        {{ $boss->service->name ?? 'Servicio' }}
+                                                    </p>
+                                                    <p class="mt-0.5 text-[11px] text-amber-700 font-secondary">
+                                                        Jefe de Servicio Designado
+                                                    </p>
                                                 </div>
                                             </div>
                                             <button wire:click="deleteServiceBoss({{ $boss->id }})"
                                                 wire:confirm="¿Revocar jefatura?"
-                                                class="text-amber-600 hover:text-brand-pink transition-colors"><x-heroicon-o-trash
-                                                    class="w-4 h-4" /></button>
+                                                class="transition-colors text-amber-600 hover:text-brand-pink">
+                                                <x-heroicon-o-trash class="w-4 h-4" />
+                                            </button>
                                         </div>
                                     @endforeach
                                 </div>
@@ -328,7 +378,8 @@
                 <div class="bg-white shadow-sm rounded-xl border border-brand-cyan/40 overflow-hidden flex flex-col">
                     <div class="px-5 py-4 border-b border-gray-100 bg-brand-cyan/5 flex justify-between items-center">
                         <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                            <x-heroicon-o-shield-check class="w-5 h-5 text-brand-cyan" /> Roles Asignados (HSI)</h3>
+                            <x-heroicon-o-shield-check class="w-5 h-5 text-brand-cyan" /> Roles Asignados (HSI)
+                        </h3>
                         <button wire:click="$set('showRoleModal', true)"
                             class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
                             Asignar Rol</button>
@@ -365,7 +416,8 @@
                                 @else
                                     <p class="text-[11px] text-gray-600 font-secondary">User: <strong
                                             class="text-brand-cyan-dark">{{ $agent->user ?? 'N/A' }}</strong> (ID:
-                                        {{ $agent->user_id ?? 'N/A' }})</p>
+                                        {{ $agent->user_id ?? 'N/A' }})
+                                    </p>
                                 @endif
                             </div>
                             <button wire:click="openHsiModal"
@@ -379,7 +431,8 @@
                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden flex flex-col">
                     <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                         <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                            <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades Jerárquicas</h3>
+                            <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades Jerárquicas
+                        </h3>
                         <button wire:click="$set('showUnitModal', true)"
                             class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
                             Vincular Unidad</button>
@@ -387,25 +440,30 @@
                     <div class="p-5 flex-1">
                         @if($agent->hierarchicalUnits->isNotEmpty())
                             @foreach($agent->hierarchicalUnits as $unit)
-                                <div class="relative pl-4 border-l-2 border-brand-cyan mb-4">
+                                <div class="relative pl-4 mb-4 border-l-2 border-brand-cyan">
                                     <div class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-brand-cyan"></div>
-                                    <div class="flex justify-between items-start">
+                                    <div class="flex items-start justify-between">
                                         <div>
                                             <p class="text-sm font-bold text-gray-900 uppercase">
-                                                {{ $unit->alias ?? $unit->name ?? 'Unidad' }}</p>
+                                                {{ $unit->alias ?? $unit->name ?? 'Unidad' }}
+                                            </p>
                                             <div class="flex items-center gap-2 mt-1.5">
                                                 <span
-                                                    class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600 font-secondary">ID
-                                                    HSI: {{ $unit->id }}</span>
+                                                    class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100 rounded-md font-secondary">
+                                                    ID HSI: {{ $unit->id }}
+                                                </span>
                                                 @if($unit->pivot->responsible ?? false)
                                                     <span
-                                                        class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20 font-secondary uppercase">Responsable</span>
+                                                        class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase rounded-md bg-amber-50 ring-1 ring-inset ring-amber-600/20 font-secondary">
+                                                        Responsable
+                                                    </span>
                                                 @endif
                                             </div>
                                         </div>
                                         <button wire:click="deleteUnit({{ $unit->id }})" wire:confirm="¿Desvincular unidad?"
-                                            class="text-gray-400 hover:text-brand-pink transition-colors"><x-heroicon-o-trash
-                                                class="w-4 h-4" /></button>
+                                            class="transition-colors text-gray-400 hover:text-brand-pink">
+                                            <x-heroicon-o-trash class="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
                             @endforeach
@@ -457,9 +515,14 @@
                                             class="w-6 h-6 text-green-600" /></div>
                                     <div>
                                         <p class="text-sm font-bold text-gray-900 uppercase">
-                                            {{ $doc->type->name ?? 'Documento' }}</p>
+                                            {{ $doc->type->name ?? 'Documento' }}
+                                        </p> @if($doc->other_type)
+                                            <p class="text-[11px] text-gray-500 font-secondary mt-0.5">Tipo declarado: <span
+                                                    class="font-bold text-gray-700">{{ $doc->other_type }}</span></p>
+                                        @endif
                                         <p class="text-[11px] text-gray-500 font-secondary mt-1">Verificado. Subido el
-                                            {{ $doc->created_at->format('d/m/Y') }}</p>
+                                            {{ $doc->created_at->format('d/m/Y') }}
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-3">
@@ -496,7 +559,8 @@
                                                 class="w-5 h-5" /></div>
                                         <div>
                                             <p class="text-sm font-bold text-gray-700 uppercase">
-                                                {{ $doc->type->name ?? $doc->other_type ?? 'Documento Extra' }}</p>
+                                                {{ $doc->type->name ?? $doc->other_type ?? 'Documento Extra' }}
+                                            </p>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-3">
@@ -671,20 +735,20 @@
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Person ID (ID
                                     de Persona HSI)</label>
-                                <input type="number" wire:model="hsi_person_id" placeholder="Ej: 15420"
+                                <input type="number" wire:model="hsi_person_id" placeholder="Ej: 12345"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">User ID
                                         HSI</label>
-                                    <input type="number" wire:model="hsi_user_id" placeholder="Ej: 840"
+                                    <input type="number" wire:model="hsi_user_id" placeholder="Ej: 123"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Username
                                         HSI</label>
-                                    <input type="text" wire:model="hsi_user" placeholder="Ej: clamas"
+                                    <input type="text" wire:model="hsi_user" placeholder="Ej: san.martin"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                                 </div>
                             </div>
@@ -776,7 +840,8 @@
                                     required>
                                     <option value="">Seleccione...</option>
                                     @foreach($registrationScopes as $scope)<option value="{{ $scope->value }}">
-                                    {{ strtoupper($scope->value) }}</option>@endforeach
+                                        {{ strtoupper($scope->value) }}
+                                    </option>@endforeach
                                 </select>
                             </div>
                             <div>
@@ -786,7 +851,8 @@
                                     required>
                                     <option value="">Seleccione...</option>
                                     @foreach($registrationTypes as $type)<option value="{{ $type->value }}">
-                                    {{ strtoupper($type->value) }}</option>@endforeach
+                                        {{ strtoupper($type->value) }}
+                                    </option>@endforeach
                                 </select>
                             </div>
                         </div>
@@ -843,7 +909,8 @@
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                                     <option value="">Ninguna...</option>
                                     @foreach($hierarchicalUnits as $unit)<option value="{{ $unit->id }}">
-                                    {{ $unit->alias ?? $unit->name }} (ID: {{ $unit->id }})</option>@endforeach
+                                        {{ $unit->alias ?? $unit->name }} (ID: {{ $unit->id }})
+                                    </option>@endforeach
                                 </select>
                             </div>
                         </div>
@@ -948,7 +1015,8 @@
                                     required>
                                     <option value="">Seleccione...</option>
                                     @foreach($hierarchicalUnits as $unit)<option value="{{ $unit->id }}">
-                                    {{ $unit->alias ?? $unit->name }} (ID: {{ $unit->id }})</option>@endforeach
+                                        {{ $unit->alias ?? $unit->name }} (ID: {{ $unit->id }})
+                                    </option>@endforeach
                                 </select>
                             </div>
                             <div class="flex items-center mt-4">
