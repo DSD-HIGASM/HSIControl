@@ -88,7 +88,7 @@ class AgentIndex extends Component
                 'gender'            => $this->new_gender,
                 'email'             => $this->new_email,
                 'phone'             => $this->new_phone,
-                'status'            => AgentStatus::ACTIVO,
+                'status'            => AgentStatus::PENDIENTE,
             ]);
         }
 
