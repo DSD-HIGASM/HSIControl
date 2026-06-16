@@ -1,115 +1,63 @@
 <?php
 
-use App\Models\User;
+use App\Models\Agent;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
-new class extends Component
-{
-    public string $name = '';
-    public string $email = '';
+new class extends Component {
+    public $user;
+    public $agent;
 
-    /**
-     * Mount the component.
-     */
-    public function mount(): void
+    public function mount()
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
-    }
-
-    /**
-     * Update the profile information for the currently authenticated user.
-     */
-    public function updateProfileInformation(): void
-    {
-        $user = Auth::user();
-
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user->id)],
-        ]);
-
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        $this->dispatch('profile-updated', name: $user->name);
-    }
-
-    /**
-     * Send an email verification notification to the current user.
-     */
-    public function sendVerification(): void
-    {
-        $user = Auth::user();
-
-        if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
-
-            return;
-        }
-
-        $user->sendEmailVerificationNotification();
-
-        Session::flash('status', 'verification-link-sent');
+        $this->user = Auth::user();
+        $this->agent = Agent::where('dni', $this->user->dni)->first();
     }
 }; ?>
 
 <section>
     <header>
-        <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Profile Information') }}
+        <h2 class="text-lg font-bold text-gray-800 font-secondary uppercase tracking-wide">
+            Información del Perfil
         </h2>
-
-        <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information and email address.") }}
+        <p class="mt-1 text-sm text-gray-500">
+            Tus datos personales están vinculados a tu legajo de agente y son de solo lectura. Si necesitas modificarlos, contacta a administración.
         </p>
     </header>
 
-    <form wire:submit="updateProfileInformation" class="mt-6 space-y-6">
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input wire:model="name" id="name" name="name" type="text" class="mt-1 block w-full" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('name')" />
+            <label class="block text-[11px] font-bold text-gray-500 font-secondary uppercase tracking-wider mb-1">DNI Usuario</label>
+            <div class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-700 sm:text-sm">
+                {{ $user->dni }}
+            </div>
         </div>
 
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="email" id="email" name="email" type="email" class="mt-1 block w-full" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-            @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! auth()->user()->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-gray-800">
-                        {{ __('Your email address is unverified.') }}
-
-                        <button wire:click.prevent="sendVerification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
-                    </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600">
-                            {{ __('A new verification link has been sent to your email address.') }}
-                        </p>
-                    @endif
+        @if($agent)
+            <div>
+                <label class="block text-[11px] font-bold text-gray-500 font-secondary uppercase tracking-wider mb-1">Nombre Completo</label>
+                <div class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-700 sm:text-sm">
+                    {{ $agent->last_name }} {{ $agent->second_last_name }}, {{ $agent->first_name }} {{ $agent->second_first_name }}
                 </div>
-            @endif
-        </div>
+            </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-500 font-secondary uppercase tracking-wider mb-1">Correo Electrónico</label>
+                <div class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-700 sm:text-sm">
+                    {{ $agent->email }}
+                </div>
+            </div>
 
-            <x-action-message class="me-3" on="profile-updated">
-                {{ __('Saved.') }}
-            </x-action-message>
-        </div>
-    </form>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-500 font-secondary uppercase tracking-wider mb-1">Teléfono</label>
+                <div class="px-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-700 sm:text-sm">
+                    {{ $agent->phone }}
+                </div>
+            </div>
+        @else
+            <div class="md:col-span-2 px-4 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-sm">
+                No se encontró un legajo de agente vinculado a este número de DNI.
+            </div>
+        @endif
+    </div>
 </section>

@@ -12,6 +12,6 @@ enum AgentGender: string
     public static function selectableCases(): array
     {
         // Devuelve todos los casos excepto el PENDIENTE
-        return array_filter(self::cases(), fn($case) => $case->name !== 'PENDIENTE');
+        return array_filter(self::cases(), fn($case) => $case !== self::PENDIENTE);
     }
 }
