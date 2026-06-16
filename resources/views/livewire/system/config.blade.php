@@ -16,7 +16,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             <!-- Tipos de Documentos -->
-            <a href="{{ route('system.document-types') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-cyan transition-all duration-200 group overflow-hidden">
+            @can('configurar.documentos')
+                <a href="{{ route('system.document-types') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-cyan transition-all duration-200 group overflow-hidden">
                 <div class="h-1 w-full bg-gray-100 group-hover:bg-brand-cyan transition-colors"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-4 mb-3">
@@ -28,9 +29,11 @@
                     <p class="font-secondary text-sm text-gray-500">Gestión de los tipos de documento que pueden cargarse.</p>
                 </div>
             </a>
+            @endcan
 
             <!-- Rol de HSI -->
-            <a href="{{ route('system.hsi-roles') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-blue transition-all duration-200 group overflow-hidden">
+            @can('configurar.roles')
+                <a href="{{ route('system.hsi-roles') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-blue transition-all duration-200 group overflow-hidden">
                 <div class="h-1 w-full bg-gray-100 group-hover:bg-brand-blue transition-colors"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-4 mb-3">
@@ -42,9 +45,11 @@
                     <p class="font-secondary text-sm text-gray-500">Mapeo de permisos y niveles de acceso a la Historia de Salud Integrada.</p>
                 </div>
             </a>
+            @endcan
 
             <!-- Profesión -->
-            <a href="{{ route('system.occupations') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-pink transition-all duration-200 group overflow-hidden">
+            @can('configurar.profesiones')
+                <a href="{{ route('system.occupations') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-pink transition-all duration-200 group overflow-hidden">
                 <div class="h-1 w-full bg-gray-100 group-hover:bg-brand-pink transition-colors"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-4 mb-3">
@@ -56,9 +61,11 @@
                     <p class="font-secondary text-sm text-gray-500">Catálogo general de disciplinas médicas, técnicas y administrativas.</p>
                 </div>
             </a>
+            @endcan
 
             <!-- Especialidad -->
-            <a href="{{ route('system.specialties') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-cyan transition-all duration-200 group overflow-hidden">
+            @can('configurar.especialidades')
+                <a href="{{ route('system.specialties') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-cyan transition-all duration-200 group overflow-hidden">
                 <div class="h-1 w-full bg-gray-100 group-hover:bg-brand-cyan transition-colors"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-4 mb-3">
@@ -70,9 +77,11 @@
                     <p class="font-secondary text-sm text-gray-500">Ramas específicas de atención asociadas a las profesiones del hospital.</p>
                 </div>
             </a>
+            @endcan
 
             <!-- Usuarios -->
-            <a href="{{ route('system.users') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-800 transition-all duration-200 group overflow-hidden">
+            @can('configurar.usuarios')
+                <a href="{{ route('system.users') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-800 transition-all duration-200 group overflow-hidden">
                 <div class="h-1 w-full bg-gray-100 group-hover:bg-gray-800 transition-colors"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-4 mb-3">
@@ -84,9 +93,11 @@
                     <p class="font-secondary text-sm text-gray-500">Administración de usuarios de este sistema.</p>
                 </div>
             </a>
+            @endcan
 
             <!-- Servicios -->
-            <a href="{{ route('system.services') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-pink transition-all duration-200 group overflow-hidden">
+            @can('configurar.servicios')
+                <a href="{{ route('system.services') }}" class="block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-pink transition-all duration-200 group overflow-hidden">
                 <div class="h-1 w-full bg-gray-100 group-hover:bg-brand-pink transition-colors"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-4 mb-3">
@@ -98,6 +109,7 @@
                     <p class="font-secondary text-sm text-gray-500">Catálogo general de servicios del hospital.</p>
                 </div>
             </a>
+            @endcan
 
         </div>
     </div>

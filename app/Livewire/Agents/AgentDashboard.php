@@ -131,7 +131,7 @@ class AgentDashboard extends Component
             'edit_phone'             => 'required|string|max:255',
             'edit_email'             => 'required|email|max:255',
             'edit_status'            => 'required|in:activo,inactivo,pendiente',
-            'edit_service_id'        => 'nullable|exists:services,id',
+            'edit_service_id'        => 'required|exists:services,id',
         ]);
 
         $this->agent->update([

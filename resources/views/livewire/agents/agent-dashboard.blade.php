@@ -33,13 +33,13 @@
                 @endif
 
                 @if($agent->agentProfessions && $agent->agentProfessions->contains('profession_id', 17))
-            <span
-                class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-sm"
-                title="Esta jefatura está cargada como profesión y debe corregirse">
-                <x-heroicon-s-user class="w-4 h-4 text-blue-500" />
-                Jefe de Servicio (A Corregir)
-            </span>
-        @endif
+                    <span
+                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-sm"
+                        title="Esta jefatura está cargada como profesión y debe corregirse">
+                        <x-heroicon-s-user class="w-4 h-4 text-blue-500" />
+                        Jefe de Servicio (A Corregir)
+                    </span>
+                @endif
 
                 <a href="{{ route('agents.print_ficha', $agent->id) }}" target="_blank"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors shadow-sm font-secondary group">
@@ -159,10 +159,12 @@
                     <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                         <x-heroicon-o-identification class="w-5 h-5 text-gray-400" /> Información Base
                     </h3>
-                    <button wire:click="openEditModal"
-                        class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors border border-brand-cyan px-3 py-1 rounded bg-white">
-                        Editar Datos
-                    </button>
+                    @can('editar.informacion')
+                        <button wire:click="openEditModal"
+                            class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors border border-brand-cyan px-3 py-1 rounded bg-white">
+                            Editar Datos
+                        </button>
+                    @endcan
                 </div>
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div><span
@@ -201,9 +203,12 @@
                                 <x-heroicon-o-academic-cap class="w-5 h-5 text-brand-cyan" /> Profesiones y
                                 Especialidades
                             </h3>
-                            <button wire:click="$set('showProfModal', true)"
-                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
-                                Asignar</button>
+                            @can('editar.profesiones')
+                                <button wire:click="$set('showProfModal', true)"
+                                    class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
+                                    Asignar
+                                </button>
+                            @endcan
                         </div>
                         <div class="p-5 space-y-4">
                             @forelse($agent->agentProfessions as $vinculacion)
@@ -222,20 +227,24 @@
                                                 </p>
                                             @endif
                                         </div>
-                                        <button wire:click="deleteProfession({{ $vinculacion->id }})"
-                                            wire:confirm="¿Seguro que deseas eliminar esta profesión?"
-                                            class="text-gray-400 transition-colors hover:text-brand-pink">
-                                            <x-heroicon-o-trash class="w-4 h-4" />
-                                        </button>
+                                        @can('editar.profesiones')
+                                            <button wire:click="deleteProfession({{ $vinculacion->id }})"
+                                                wire:confirm="¿Seguro que deseas eliminar esta profesión?"
+                                                class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                <x-heroicon-o-trash class="w-4 h-4" />
+                                            </button>
+                                        @endcan
                                     </div>
 
                                     <div class="bg-gray-50 rounded-lg p-3 border border-gray-100 mt-3">
                                         <div class="flex justify-between items-center mb-2">
                                             <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                                                 Matrículas Vinculadas</h4>
-                                            <button wire:click="openRegistrationModal({{ $vinculacion->id }})"
-                                                class="text-brand-cyan hover:text-brand-cyan-dark text-[10px] font-bold font-secondary transition-colors">+
-                                                Cargar Matrícula</button>
+                                            @can('editar.profesiones')
+                                                <button wire:click="openRegistrationModal({{ $vinculacion->id }})"
+                                                    class="text-brand-cyan hover:text-brand-cyan-dark text-[10px] font-bold font-secondary transition-colors">+
+                                                    Cargar Matrícula</button>
+                                            @endcan
                                         </div>
 
                                         @if($vinculacion->registrations->isNotEmpty())
@@ -252,11 +261,13 @@
                                                                 {{ is_object($reg->type) ? $reg->type->value : $reg->type }}
                                                             </div>
                                                         </div>
-                                                        <button wire:click="deleteRegistration({{ $reg->id }})"
-                                                            wire:confirm="¿Borrar matrícula?"
-                                                            class="text-gray-400 transition-colors hover:text-brand-pink">
-                                                            <x-heroicon-o-trash class="w-4 h-4" />
-                                                        </button>
+                                                        @can('editar.profesiones')
+                                                            <button wire:click="deleteRegistration({{ $reg->id }})"
+                                                                wire:confirm="¿Borrar matrícula?"
+                                                                class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                                <x-heroicon-o-trash class="w-4 h-4" />
+                                                            </button>
+                                                        @endcan
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -282,9 +293,11 @@
                                 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                                 <x-heroicon-o-clock class="w-5 h-5 text-gray-400" /> Formación / Residencias
                             </h3>
-                            <button wire:click="$set('showResModal', true)"
-                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
-                                Cargar</button>
+                            @can('editar.profesiones')
+                                <button wire:click="$set('showResModal', true)"
+                                    class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
+                                    Cargar</button>
+                            @endcan
                         </div>
                         <div class="p-5">
                             @if($agent->residencies->isNotEmpty())
@@ -309,11 +322,13 @@
                                                     </span>
                                                 </div>
                                             </div>
-                                            <button wire:click="deleteResidency({{ $residency->id }})"
-                                                wire:confirm="¿Borrar residencia?"
-                                                class="text-gray-400 transition-colors hover:text-brand-pink">
-                                                <x-heroicon-o-trash class="w-4 h-4" />
-                                            </button>
+                                            @can('editar.profesiones')
+                                                <button wire:click="deleteResidency({{ $residency->id }})"
+                                                    wire:confirm="¿Borrar residencia?"
+                                                    class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                                </button>
+                                            @endcan
                                         </div>
                                     @endforeach
                                 </div>
@@ -333,9 +348,11 @@
                                 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                                 <x-heroicon-o-star class="w-5 h-5 text-amber-500" /> Jefaturas de Servicio
                             </h3>
-                            <button wire:click="$set('showBossModal', true)"
-                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
-                                Asignar Jefatura</button>
+                            @can('editar.profesiones')
+                                <button wire:click="$set('showBossModal', true)"
+                                    class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
+                                    Asignar Jefatura</button>
+                            @endcan
                         </div>
                         <div class="p-5">
                             @if($agent->serviceBosses->isNotEmpty())
@@ -356,11 +373,13 @@
                                                     </p>
                                                 </div>
                                             </div>
-                                            <button wire:click="deleteServiceBoss({{ $boss->id }})"
-                                                wire:confirm="¿Revocar jefatura?"
-                                                class="transition-colors text-amber-600 hover:text-brand-pink">
-                                                <x-heroicon-o-trash class="w-4 h-4" />
-                                            </button>
+                                            @can('editar.profesiones')
+                                                <button wire:click="deleteServiceBoss({{ $boss->id }})"
+                                                    wire:confirm="¿Revocar jefatura?"
+                                                    class="transition-colors text-amber-600 hover:text-brand-pink">
+                                                    <x-heroicon-o-trash class="w-4 h-4" />
+                                                </button>
+                                            @endcan
                                         </div>
                                     @endforeach
                                 </div>
@@ -380,9 +399,11 @@
                         <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                             <x-heroicon-o-shield-check class="w-5 h-5 text-brand-cyan" /> Roles Asignados (HSI)
                         </h3>
-                        <button wire:click="$set('showRoleModal', true)"
-                            class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
-                            Asignar Rol</button>
+                        @can('editar.accesos')
+                            <button wire:click="$set('showRoleModal', true)"
+                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
+                                Asignar Rol</button>
+                        @endcan
                     </div>
                     <div class="flex-1 flex flex-col">
                         @if($agent->hsiRoles->isNotEmpty())
@@ -391,10 +412,14 @@
                                     @foreach($agent->hsiRoles as $role)
                                         <tr class="hover:bg-gray-50 transition-colors">
                                             <td class="px-5 py-3.5 font-bold text-gray-900">{{ $role->name }}</td>
-                                            <td class="px-5 py-3.5 text-right"><button wire:click="deleteRole({{ $role->id }})"
-                                                    wire:confirm="¿Quitar rol HSI?"
-                                                    class="text-gray-400 hover:text-brand-pink transition-colors"><x-heroicon-o-trash
-                                                        class="w-4 h-4" /></button></td>
+                                            <td class="px-5 py-3.5 text-right">
+                                                @can('editar.accesos')
+                                                    <button wire:click="deleteRole({{ $role->id }})" wire:confirm="¿Quitar rol HSI?"
+                                                        class="text-gray-400 hover:text-brand-pink transition-colors"><x-heroicon-o-trash
+                                                            class="w-4 h-4" />
+                                                    </button>
+                                                @endcan
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -420,10 +445,12 @@
                                     </p>
                                 @endif
                             </div>
-                            <button wire:click="openHsiModal"
-                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors border border-brand-cyan/30 px-3 py-1.5 rounded-md bg-white shadow-sm">
-                                Vincular Credenciales
-                            </button>
+                            @can('editar.accesos')
+                                <button wire:click="openHsiModal"
+                                    class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors border border-brand-cyan/30 px-3 py-1.5 rounded-md bg-white shadow-sm">
+                                    Vincular Credenciales
+                                </button>
+                            @endcan
                         </div>
                     </div>
                 </div>
@@ -433,9 +460,11 @@
                         <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                             <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades Jerárquicas
                         </h3>
-                        <button wire:click="$set('showUnitModal', true)"
-                            class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
-                            Vincular Unidad</button>
+                        @can('editar.accesos')
+                            <button wire:click="$set('showUnitModal', true)"
+                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">+
+                                Vincular Unidad</button>
+                        @endcan
                     </div>
                     <div class="p-5 flex-1">
                         @if($agent->hierarchicalUnits->isNotEmpty())
@@ -460,10 +489,12 @@
                                                 @endif
                                             </div>
                                         </div>
-                                        <button wire:click="deleteUnit({{ $unit->id }})" wire:confirm="¿Desvincular unidad?"
-                                            class="transition-colors text-gray-400 hover:text-brand-pink">
-                                            <x-heroicon-o-trash class="w-4 h-4" />
-                                        </button>
+                                        @can('editar.accesos')
+                                            <button wire:click="deleteUnit({{ $unit->id }})" wire:confirm="¿Desvincular unidad?"
+                                                class="transition-colors text-gray-400 hover:text-brand-pink">
+                                                <x-heroicon-o-trash class="w-4 h-4" />
+                                            </button>
+                                        @endcan
                                     </div>
                                 </div>
                             @endforeach
@@ -487,10 +518,12 @@
                             <p class="text-xs font-secondary text-gray-500 mt-1">Exigidos obligatoriamente según los
                                 Roles que tiene asignados.</p>
                         </div>
-                        <button wire:click="$set('showDocModal', true)"
-                            class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm font-secondary flex items-center gap-1">
-                            <x-heroicon-o-cloud-arrow-up class="w-4 h-4" /> Subir PDF
-                        </button>
+                        @can('editar.documentos')
+                            <button wire:click="$set('showDocModal', true)"
+                                class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm font-secondary flex items-center gap-1">
+                                <x-heroicon-o-cloud-arrow-up class="w-4 h-4" /> Subir PDF
+                            </button>
+                        @endcan
                     </div>
 
                     <div class="divide-y divide-gray-100">
@@ -529,9 +562,11 @@
                                     <a href="{{ Storage::url($doc->path) }}" target="_blank"
                                         class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary flex items-center gap-1"><x-heroicon-o-arrow-down-tray
                                             class="w-4 h-4" /> Bajar</a>
-                                    <button wire:click="deleteDocument({{ $doc->id }})" wire:confirm="¿Borrar documento?"
-                                        class="text-gray-400 hover:text-brand-pink"><x-heroicon-o-trash
-                                            class="w-4 h-4" /></button>
+                                    @can('editar.documentos')
+                                        <button wire:click="deleteDocument({{ $doc->id }})" wire:confirm="¿Borrar documento?"
+                                            class="text-gray-400 hover:text-brand-pink"><x-heroicon-o-trash
+                                                class="w-4 h-4" /></button>
+                                    @endcan
                                 </div>
                             </div>
                         @endforeach
@@ -612,16 +647,8 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label
-                                            class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Servicio
-                                            Base (Planta)</label>
-                                        <select wire:model="edit_service_id"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
-                                            <option value="">Sin Asignar / Externo</option>
-                                            @foreach($services as $serv)
-                                                <option value="{{ $serv->id }}">{{ $serv->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <x-searchable-select wire:model="edit_service_id" label="Servicio Base (Planta)"
+                                            placeholder="Escriba para buscar..." :options="$services->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values()->toArray()" required/>
                                     </div>
                                 </div>
 
@@ -778,28 +805,13 @@
                             <h3 class="text-lg font-bold text-gray-900">Asignar Profesión</h3>
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
-                            <div>
-                                <label
-                                    class="block text-xs font-bold text-gray-700 font-secondary uppercase">Ocupación/Profesión
-                                    *</label>
-                                <select wire:model="prof_profession_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
-                                    required>
-                                    <option value="">Seleccione...</option>
-                                    @foreach($occupations as $occ)<option value="{{ $occ->id }}">{{ $occ->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Especialidad
-                                    (Opcional)</label>
-                                <select wire:model="prof_specialty_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
-                                    <option value="">Ninguna...</option>
-                                    @foreach($specialities as $spec)<option value="{{ $spec->id }}">{{ $spec->name }}
-                                    </option>@endforeach
-                                </select>
-                            </div>
+                            <x-searchable-select wire:model="prof_profession_id" label="Ocupación/Profesión *"
+                                placeholder="Buscar ocupación..." defaultText="Seleccione..."
+                                :options="$occupations->map(fn($occ) => ['id' => $occ->id, 'name' => $occ->name])->values()->toArray()" />
+
+                            <x-searchable-select wire:model="prof_specialty_id" label="Especialidad (Opcional)"
+                                placeholder="Buscar especialidad..." defaultText="Ninguna..."
+                                :options="$specialities->map(fn($spec) => ['id' => $spec->id, 'name' => $spec->name])->values()->toArray()" />
                         </div>
                         <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
                             <button type="button" wire:click="$set('showProfModal', false)"
@@ -903,15 +915,9 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Unidad HSI
-                                    Rotación Actual</label>
-                                <select wire:model="res_current_unit_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
-                                    <option value="">Ninguna...</option>
-                                    @foreach($hierarchicalUnits as $unit)<option value="{{ $unit->id }}">
-                                        {{ $unit->alias ?? $unit->name }} (ID: {{ $unit->id }})
-                                    </option>@endforeach
-                                </select>
+                                <x-searchable-select wire:model="res_current_unit_id" label="Unidad HSI Rotación Actual"
+                                    placeholder="Buscar unidad..." defaultText="Ninguna..."
+                                    :options="$hierarchicalUnits->map(fn($unit) => ['id' => $unit->id, 'name' => ($unit->alias ?? $unit->name) . ' (ID: ' . $unit->id . ')'])->values()->toArray()" />
                             </div>
                         </div>
                         <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
@@ -939,15 +945,9 @@
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Servicio a
-                                    Cargo *</label>
-                                <select wire:model="boss_service_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
-                                    required>
-                                    <option value="">Seleccione...</option>
-                                    @foreach($services as $serv)<option value="{{ $serv->id }}">{{ $serv->name }}</option>
-                                    @endforeach
-                                </select>
+                                <x-searchable-select wire:model="boss_service_id" label="Servicio a Cargo *"
+                                    placeholder="Buscar servicio..." defaultText="Seleccione..."
+                                    :options="$services->map(fn($serv) => ['id' => $serv->id, 'name' => $serv->name])->values()->toArray()" />
                             </div>
                         </div>
                         <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
@@ -974,14 +974,8 @@
                             <h3 class="text-lg font-bold text-gray-900">Asignar Rol HSI</h3>
                         </div>
                         <div class="p-6 bg-gray-50">
-                            <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Rol del Sistema
-                                *</label>
-                            <select wire:model="role_id"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
-                                required>
-                                <option value="">Seleccione...</option>
-                                @foreach($hsiRoles as $r)<option value="{{ $r->id }}">{{ $r->name }}</option>@endforeach
-                            </select>
+                            <x-searchable-select wire:model="role_id" label="Rol del Sistema *" placeholder="Buscar rol..."
+                                defaultText="Seleccione..." :options="$hsiRoles->map(fn($r) => ['id' => $r->id, 'name' => $r->name])->values()->toArray()" />
                         </div>
                         <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
                             <button type="button" wire:click="$set('showRoleModal', false)"
@@ -1008,16 +1002,9 @@
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Unidad HSI
-                                    *</label>
-                                <select wire:model="unit_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
-                                    required>
-                                    <option value="">Seleccione...</option>
-                                    @foreach($hierarchicalUnits as $unit)<option value="{{ $unit->id }}">
-                                        {{ $unit->alias ?? $unit->name }} (ID: {{ $unit->id }})
-                                    </option>@endforeach
-                                </select>
+                                <x-searchable-select wire:model="unit_id" label="Unidad HSI *"
+                                    placeholder="Buscar unidad..." defaultText="Seleccione..."
+                                    :options="$hierarchicalUnits->map(fn($unit) => ['id' => $unit->id, 'name' => ($unit->alias ?? $unit->name) . ' (ID: ' . $unit->id . ')'])->values()->toArray()" />
                             </div>
                             <div class="flex items-center mt-4">
                                 <input type="checkbox" wire:model="unit_responsible" id="unit_resp"
@@ -1052,15 +1039,9 @@
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Tipo de
-                                    Documento *</label>
-                                <select wire:model="doc_type_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
-                                    required>
-                                    <option value="">Seleccione...</option>
-                                    @foreach($documentTypes as $type)<option value="{{ $type->id }}">{{ $type->name }}
-                                    </option>@endforeach
-                                </select>
+                                <x-searchable-select wire:model="doc_type_id" label="Tipo de Documento *"
+                                    placeholder="Buscar documento..." defaultText="Seleccione..."
+                                    :options="$documentTypes->map(fn($type) => ['id' => $type->id, 'name' => $type->name])->values()->toArray()" />
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Descripción

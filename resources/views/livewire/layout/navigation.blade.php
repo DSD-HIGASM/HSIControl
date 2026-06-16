@@ -39,15 +39,21 @@ new class extends Component {
                         class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
                         Padrón de personal
                     </x-nav-link>
-                    <x-nav-link :href="route('system.config')" :active="request()->routeIs(['system.config', 'system.document-types', 'system.occupations', 'system.specialties', 'system.users', 'system.permissions', 'system.hsi-roles'])"
-                        class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
-                        Configuración
-                    </x-nav-link>
-                    <x-nav-link :href="route('system.activity-logs')"
-                        :active="request()->routeIs('system.activity-logs')"
-                        class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
-                        Logs
-                    </x-nav-link>
+
+                    @canany(['configurar.documentos', 'configurar.roles', 'configurar.profesiones', 'configurar.especialidades', 'configurar.usuarios', 'configurar.servicios'])
+                        <x-nav-link :href="route('system.config')" :active="request()->routeIs(['system.config', 'system.document-types', 'system.occupations', 'system.specialties', 'system.users', 'system.permissions', 'system.hsi-roles'])"
+                            class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
+                            Configuración
+                        </x-nav-link>
+                    @endcanany
+
+                    @can('ver.logs')
+                        <x-nav-link :href="route('system.activity-logs')"
+                            :active="request()->routeIs('system.activity-logs')"
+                            class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
+                            Logs
+                        </x-nav-link>
+                    @endcan
                 </div>
             </div>
 

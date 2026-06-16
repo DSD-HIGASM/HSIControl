@@ -18,23 +18,40 @@ Route::view('/', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
 Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
 Route::prefix('config')->middleware(['auth'])->group(function () {
+    // Nota: A la ruta raíz de config y a los logs no les pasaste un permiso específico,
+    // por lo que conservan solo la protección del login (auth).
     Route::get('/', Config::class)->name('system.config');
-    Route::get('/document-types', DocumentTypes::class)->name('system.document-types');
-    Route::get('/hsi-roles', HsiRoles::class)->name('system.hsi-roles');
-    Route::get('/occupations', Occupations::class)->name('system.occupations');
-    Route::get('/specialties', Specialties::class)->name('system.specialties');
-    Route::get('/users', Users::class)->name('system.users');
-    Route::get('/services', Services::class)->name('system.services');
     Route::get('/activity-logs', ActivityLogs::class)->name('system.activity-logs');
+
+    // Rutas con protección específica
+    Route::get('/document-types', DocumentTypes::class)
+        ->middleware('can:configurar.documentos')
+        ->name('system.document-types');
+
+    Route::get('/hsi-roles', HsiRoles::class)
+        ->middleware('can:configurar.roles')
+        ->name('system.hsi-roles');
+
+    Route::get('/occupations', Occupations::class)
+        ->middleware('can:configurar.profesiones')
+        ->name('system.occupations');
+
+    Route::get('/specialties', Specialties::class)
+        ->middleware('can:configurar.especialidades')
+        ->name('system.specialties');
+
+    Route::get('/users', Users::class)
+        ->middleware('can:configurar.usuarios')
+        ->name('system.users');
+
+    Route::get('/services', Services::class)
+        ->middleware('can:configurar.servicios')
+        ->name('system.services');
 });
 
 Route::prefix('padron')->middleware(['auth'])->group(function () {

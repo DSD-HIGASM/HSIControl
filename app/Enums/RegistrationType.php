@@ -4,6 +4,6 @@ namespace App\Enums;
 
 enum RegistrationType: string
 {
-    case PROFESION = 'profession';
-    case ESPECIALIDAD = 'specialty';
+    case PROFESION = 'profesion';
+    case ESPECIALIDAD = 'especialidad';
 }

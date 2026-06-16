@@ -43,9 +43,12 @@ class Users extends Component
         ]);
     }
 
-    public function save(): void
+        public function save(): void
     {
         $this->validate();
+
+        // Buscamos los modelos completos de Spatie basados en los IDs seleccionados
+        $permissionsToSync = Permission::whereIn('id', $this->selectedPermissions)->get();
 
         if ($this->editId) {
             $user = User::withTrashed()->find($this->editId);
@@ -58,9 +61,8 @@ class Users extends Component
                 
                 $user->save();
                 
-                // Sincronizamos los permisos usando el método nativo de Spatie
-                // Esto borra los desmarcados y agrega los nuevos automáticamente
-                $user->syncPermissions($this->selectedPermissions);
+                // CORRECCIÓN: Pasamos la colección de modelos en lugar de los IDs
+                $user->syncPermissions($permissionsToSync);
             }
             $this->dispatch('notify', message: 'Credencial y permisos actualizados correctamente.', type: 'success');
         } else {
@@ -69,14 +71,15 @@ class Users extends Component
                 'password' => Hash::make($this->password),
             ]);
             
-            // Asignamos los permisos al nuevo usuario
-            $user->syncPermissions($this->selectedPermissions);
+            // CORRECCIÓN: Pasamos la colección de modelos en lugar de los IDs
+            $user->syncPermissions($permissionsToSync);
             
             $this->dispatch('notify', message: 'Credencial creada y configurada correctamente.', type: 'success');
         }
 
         $this->resetForm();
     }
+
 
     public function edit(int $id): void
     {
