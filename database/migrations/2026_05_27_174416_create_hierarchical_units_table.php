@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('hierarchical_units', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->primary(); 
+            $table->id(); 
             $table->integer('institution_id')->default(484);
             $table->foreignId('type_id')->constrained('hierarchical_unit_types');
             $table->string('alias');
