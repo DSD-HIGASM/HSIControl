@@ -11,7 +11,7 @@ class HierarchicalUnit extends Model
     use SoftDeletes, LogsAllModelChanges;
 
     // Deshabilitamos el autoincremento para forzar el ID exacto de HSI
-    public $incrementing = false;
+    // public $incrementing = false;
     protected $keyType = 'int';
 
     protected $fillable = [

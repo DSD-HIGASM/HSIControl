@@ -13,6 +13,7 @@ use App\Livewire\Agents\AgentIndex;
 use App\Livewire\Agents\AgentDashboard;
 use App\Http\Controllers\Agents\AgentPrintController;
 use App\Http\Controllers\Agents\AgentController;
+use App\Livewire\HierarchicalUnits\Manager;
 
 Route::view('/', 'dashboard')
     ->middleware(['auth', 'verified'])
@@ -61,6 +62,9 @@ Route::prefix('padron')->middleware(['auth'])->group(function () {
     // Detalle del legajo (pasando el ID del agente por la URL)
     Route::get('/{agent}', AgentDashboard::class)->name('agents.show');
 });
+
+Route::get('/uujj', Manager::class)
+    ->name('hierarchical-units.manager');
 
 Route::get('/imprimir', AgentPrintController::class)->name('agents.print');
 Route::get('/padron/{agent}/ficha/imprimir', [AgentController::class, 'printFicha'])->name('agents.print_ficha');

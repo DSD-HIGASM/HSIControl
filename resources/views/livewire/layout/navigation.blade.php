@@ -54,6 +54,12 @@ new class extends Component {
                             Logs
                         </x-nav-link>
                     @endcan
+
+                    <x-nav-link :href="route('hierarchical-units.manager')"
+                            :active="request()->routeIs('hierarchical-units.manager')"
+                            class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
+                            Unidades Jerárquicas
+                        </x-nav-link>
                 </div>
             </div>
 
