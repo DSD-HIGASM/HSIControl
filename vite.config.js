@@ -9,4 +9,17 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    build: {
+        // Le decimos a Vite: "No te asustes a menos que un archivo supere los 1000 KB"
+        chunkSizeWarningLimit: 1000,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules/vis-network')) {
+                        return 'vis-vendor';
+                    }
+                }
+            }
+        }
+    }
 });
