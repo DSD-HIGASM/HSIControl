@@ -12,14 +12,21 @@ use Livewire\Component;
 class Manager extends Component
 {
     public $unit_id = null;
+
     public $alias = '';
+
     public $type_id = '';
+
     public $hierarchical_unit_id_to_report = null;
+
     public $clinical_specialty_id = null;
+
     public $parent_ids = [];
 
-    public $search_parents = ''; 
+    public $search_parents = '';
+
     public $is_editing = false;
+
     public $showPanel = false;
 
     // 1. Datos para el Tablero
@@ -33,6 +40,7 @@ class Manager extends Component
                 'children' => $unit->children->pluck('id')->toArray(),
             ];
         }
+
         return $map;
     }
 
@@ -51,7 +59,7 @@ class Manager extends Component
                 if ($unit->parents->isNotEmpty()) {
                     $maxParentDepth = 0;
                     $allParentsResolved = true;
-                    
+
                     foreach ($unit->parents as $parent) {
                         $pDepth = $depths[$parent->id] ?? 0;
                         if ($pDepth === 0) {
@@ -76,14 +84,15 @@ class Manager extends Component
 
         $grouped = [];
         foreach ($allUnits as $unit) {
-            $lvl = $depths[$unit->id] ?? 99; 
-            if (!isset($grouped[$lvl])) {
+            $lvl = $depths[$unit->id] ?? 99;
+            if (! isset($grouped[$lvl])) {
                 $grouped[$lvl] = [];
             }
             $grouped[$lvl][] = $unit;
         }
-        
+
         ksort($grouped);
+
         return $grouped;
     }
 
@@ -95,22 +104,27 @@ class Manager extends Component
         $edges = [];
 
         foreach ($allUnits as $unit) {
-            $tipo = $unit->type->description ?? 'Unidad';
-            $nombreCorto = wordwrap($unit->alias, 25, "\n");
-            
-            $nodes[] = [
-                'id' => $unit->id,
-                'label' => "<b>" . strtoupper($tipo) . "</b>\n" . $nombreCorto,
-                'title' => 'Haz clic para editar'
-            ];
+    // 1. Obtenemos los datos limpios
+    $tipo = $unit->type->description ?? 'Sin Tipo';
+    $nombreCorto = wordwrap($unit->alias, 500, "\n");
 
-            foreach ($unit->parents as $parent) {
-                $edges[] = [
-                    'from' => $parent->id,
-                    'to' => $unit->id
-                ];
-            }
-        }
+    // 2. Construcción segura del string con etiquetas HTML
+    // Usamos strtoupper solo en el Tipo si querés mantener el estilo corporativo
+    $label = "<b>" . $nombreCorto . "</b>" . "\n" . "<i>" . strtoupper($tipo) . "</i>";
+
+    $nodes[] = [
+        'id' => $unit->id,
+        'label' => $label,
+        'title' => 'Opciones de la unidad',
+    ];
+
+    foreach ($unit->parents as $parent) {
+        $edges[] = [
+            'from' => $parent->id,
+            'to' => $unit->id,
+        ];
+    }
+}
 
         return ['nodes' => $nodes, 'edges' => $edges];
     }
@@ -132,13 +146,13 @@ class Manager extends Component
         })->orderBy('alias')->get();
 
         $allUnits = HierarchicalUnit::with(['type', 'parents', 'children', 'specialty'])->orderBy('alias')->get();
-        
+
         // Formateo para los x-searchable-select (Requieren 'id' y 'name')
-        $typesOptions = $types->map(function($t) {
+        $typesOptions = $types->map(function ($t) {
             return ['id' => $t->id, 'name' => $t->description];
         })->toArray();
 
-        $serviceUnitsOptions = $serviceUnits->map(function($u) {
+        $serviceUnitsOptions = $serviceUnits->map(function ($u) {
             return ['id' => $u->id, 'name' => $u->alias];
         })->toArray();
 
@@ -146,16 +160,16 @@ class Manager extends Component
             'typesOptions' => $typesOptions,
             'serviceUnitsOptions' => $serviceUnitsOptions,
             'specialties' => Speciality::orderBy('name')->get(),
-            'formSearchUnits' => HierarchicalUnit::when($this->search_parents, function($q) {
-                                $q->where('alias', 'like', '%' . $this->search_parents . '%');
-                            })->orderBy('alias')->get(),
+            'formSearchUnits' => HierarchicalUnit::when($this->search_parents, function ($q) {
+                $q->where('alias', 'like', '%'.$this->search_parents.'%');
+            })->orderBy('alias')->get(),
             'isServicioSelected' => $isServicioSelected,
-            
+
             // Data Tablero
             'groupedUnits' => $this->getGroupedByLevel($allUnits),
             'relationsMap' => $this->cloneRelationsMap(),
-            'unitsData' => $allUnits->keyBy('id')->map(fn($u) => ['alias' => strtolower($u->alias)])->toArray(),
-            
+            'unitsData' => $allUnits->keyBy('id')->map(fn ($u) => ['alias' => strtolower($u->alias)])->toArray(),
+
             // Data Grafo
             'networkData' => $this->getNetworkData(),
         ]);
@@ -167,7 +181,7 @@ class Manager extends Component
     {
         $this->resetForm();
         // Forzamos al padre casteando a string para el checkbox
-        $this->parent_ids = [(string)$parentId];
+        $this->parent_ids = [(string) $parentId];
         $this->showPanel = true;
     }
 
@@ -182,8 +196,8 @@ class Manager extends Component
             $this->type_id = $unit->type_id;
             $this->hierarchical_unit_id_to_report = $unit->hierarchical_unit_id_to_report;
             $this->clinical_specialty_id = $unit->clinical_specialty_id;
-            $this->parent_ids = $unit->parents->pluck('id')->map(fn($id) => (string)$id)->toArray();
-            
+            $this->parent_ids = $unit->parents->pluck('id')->map(fn ($id) => (string) $id)->toArray();
+
             $this->is_editing = true;
         }
 
@@ -208,7 +222,7 @@ class Manager extends Component
 
         $types = HierarchicalUnitType::all();
         $type = $types->firstWhere('id', $this->type_id);
-        
+
         if ($type && stripos($type->description, 'servicio') !== false) {
             $rules['clinical_specialty_id'] = ['nullable', 'exists:specialities,id'];
         }
@@ -221,11 +235,12 @@ class Manager extends Component
         if ($type && stripos($type->description, 'servicio') !== false) {
             $validated['clinical_specialty_id'] = $this->clinical_specialty_id;
         } else {
-            $validated['clinical_specialty_id'] = null; 
+            $validated['clinical_specialty_id'] = null;
         }
 
         if ($this->is_editing && in_array($this->unit_id, $this->parent_ids)) {
             $this->addError('parent_ids', 'Una unidad no puede depender de sí misma.');
+
             return;
         }
 
@@ -244,7 +259,7 @@ class Manager extends Component
 
         session()->flash('status', $this->is_editing ? 'Unidad actualizada correctamente.' : 'Unidad creada con éxito.');
         $this->closePanel();
-        
+
         // Avisamos a las dos interfaces JS que hay datos nuevos
         $this->dispatch('relations-updated', map: $this->cloneRelationsMap());
         $this->dispatch('network-updated', data: $this->getNetworkData());
@@ -256,7 +271,7 @@ class Manager extends Component
             HierarchicalUnit::findOrFail($this->unit_id)->delete();
             session()->flash('status', 'Unidad eliminada correctamente.');
             $this->closePanel();
-            
+
             $this->dispatch('relations-updated', map: $this->cloneRelationsMap());
             $this->dispatch('network-updated', data: $this->getNetworkData());
         }
@@ -265,9 +280,9 @@ class Manager extends Component
     private function resetForm()
     {
         $this->reset([
-            'unit_id', 'alias', 'type_id', 'hierarchical_unit_id_to_report', 
-            'clinical_specialty_id', 'parent_ids', 
-            'search_parents', 'is_editing'
+            'unit_id', 'alias', 'type_id', 'hierarchical_unit_id_to_report',
+            'clinical_specialty_id', 'parent_ids',
+            'search_parents', 'is_editing',
         ]);
         $this->resetValidation();
     }

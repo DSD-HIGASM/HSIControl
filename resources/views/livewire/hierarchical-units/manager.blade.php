@@ -548,10 +548,19 @@
                 shape: 'box', 
                 margin: { top: 12, right: 18, bottom: 12, left: 18 },
                 font: { 
-                    face: 'Inter, system-ui, sans-serif', 
                     multi: 'html',
-                    bold: { size: 14, color: '#1e293b' }, 
-                    ital: { size: 10, color: '#64748b', mod: 'normal' }
+                    face: '"Encode Sans", sans-serif', // Fuente de respaldo
+                    bold: { 
+                        size: 14, 
+                        color: '#1e293b', 
+                        face: '"Encode Sans", sans-serif' // Tipografía Principal (Nombre)
+                    }, 
+                    ital: { 
+                        size: 10, 
+                        color: '#64748b', 
+                        face: 'Roboto, sans-serif',       // Tipografía Secundaria (Tipo)
+                        mod: 'normal' 
+                    }
                 },
                 color: { 
                     background: '#ffffff', 
