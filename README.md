@@ -4,26 +4,25 @@ Sistema central de gestión administrativa, control de accesos y estructura orga
 
 ## 🚀 Características Principales
 
-* **Padrón de Personal:** Gestión completa de agentes, vinculación de usuarios y control de legajos de recursos humanos.
+* **Padrón de Personal:** Gestión completa de agentes, vinculación de usuarios y control de legajos de HSI.
 * **Estructura Profesional:** Administración centralizada de especialidades médicas, profesiones, ocupaciones y tipos de documentos.
 * **Tablero Estructural Funcional:** Visualización y gestión de Unidades Jerárquicas (Direcciones, Departamentos, Servicios, Consultorios, etc.) mediante un mapa panorámico interactivo con cálculo automático de dependencias funcionales y administrativas.
-* **Control de Accesos (RBAC):** Sistema robusto de roles y permisos granulares para gobernar el acceso a los distintos módulos.
+* **Control de Accesos (RBAC):** Sistema de permisos granulares para gobernar el acceso a los distintos módulos.
 * **Auditoría Integral:** Registro automático de actividad, trazabilidad de sesiones y control de cambios en los modelos críticos del sistema.
 
 ## 🛠 Stack Tecnológico
 
-* **Backend:** Laravel 11
+* **Backend:** Laravel 13
 * **Frontend:** Livewire 3 (Arquitectura Volt), Alpine.js, Tailwind CSS
 * **Control de Accesos:** Spatie Laravel Permission
 * **Auditoría:** Spatie Laravel Activitylog
 
 ## 📋 Requisitos Previos
 
-[Inferencia] Al estar construido sobre la arquitectura de Laravel 11, el entorno de despliegue requiere las siguientes herramientas:
-* PHP >= 8.2
+* PHP >= 8.4
 * Composer
 * Node.js y NPM
-* Motor de Base de Datos relacional (MySQL 8.0+, MariaDB o PostgreSQL)
+* Motor de Base de Datos relacional (MySQL 8.0+, MariaDB, PostgreSQL o SQLite)
 
 ## ⚙️ Instalación y Despliegue
 
