@@ -320,6 +320,14 @@
 
                             <hr class="border-gray-100">
 
+                            <div class="pb-24">
+                                <x-searchable-select wire:model="hierarchical_unit_id_to_report"
+                                    label="Reporta Estadísticamente a" :options="$serviceUnitsOptions"
+                                    placeholder="Buscar servicio de reporte..." defaultText="Ninguno..." />
+                            </div>
+
+                            <hr class="border-gray-100">
+
                             <div>
                                 <label
                                     class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-2">Dependencia
@@ -348,14 +356,6 @@
                                 </div>
                                 @error('parent_ids') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                                 @enderror
-                            </div>
-
-                            <hr class="border-gray-100">
-
-                            <div class="pb-24">
-                                <x-searchable-select wire:model="hierarchical_unit_id_to_report"
-                                    label="Reporta Estadísticamente a" :options="$serviceUnitsOptions"
-                                    placeholder="Buscar servicio de reporte..." defaultText="Ninguno..." />
                             </div>
                         </form>
                     </div>
