@@ -320,7 +320,7 @@
 
                             <hr class="border-gray-100">
 
-                            <div class="pb-24">
+                            <div>
                                 <x-searchable-select wire:model="hierarchical_unit_id_to_report"
                                     label="Reporta Estadísticamente a" :options="$serviceUnitsOptions"
                                     placeholder="Buscar servicio de reporte..." defaultText="Ninguno..." />
