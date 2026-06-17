@@ -22,8 +22,8 @@ class Manager extends Component
     public $is_editing = false;
     public $showPanel = false;
 
-    // Función privada para armar el mapa. Ya no es una variable pública.
-    private function getRelationsMap()
+    // 1. Datos para el Tablero
+    private function cloneRelationsMap()
     {
         $allUnits = HierarchicalUnit::with(['parents', 'children'])->get();
         $map = [];
@@ -39,7 +39,6 @@ class Manager extends Component
     private function getGroupedByLevel($allUnits)
     {
         $depths = [];
-        
         foreach ($allUnits as $unit) {
             $depths[$unit->id] = $unit->parents->isEmpty() ? 1 : 0;
         }
@@ -88,6 +87,34 @@ class Manager extends Component
         return $grouped;
     }
 
+    // 2. Datos para el Grafo Vis.js
+    private function getNetworkData()
+    {
+        $allUnits = HierarchicalUnit::with(['type', 'parents'])->get();
+        $nodes = [];
+        $edges = [];
+
+        foreach ($allUnits as $unit) {
+            $tipo = $unit->type->description ?? 'Unidad';
+            $nombreCorto = wordwrap($unit->alias, 25, "\n");
+            
+            $nodes[] = [
+                'id' => $unit->id,
+                'label' => "<b>" . strtoupper($tipo) . "</b>\n" . $nombreCorto,
+                'title' => 'Haz clic para editar'
+            ];
+
+            foreach ($unit->parents as $parent) {
+                $edges[] = [
+                    'from' => $parent->id,
+                    'to' => $unit->id
+                ];
+            }
+        }
+
+        return ['nodes' => $nodes, 'edges' => $edges];
+    }
+
     public function render()
     {
         $types = HierarchicalUnitType::orderBy('description')->get();
@@ -104,22 +131,44 @@ class Manager extends Component
             $q->where('description', 'like', '%servicio%');
         })->orderBy('alias')->get();
 
-        $allUnits = HierarchicalUnit::with(['type', 'parents', 'children'])->orderBy('alias')->get();
+        $allUnits = HierarchicalUnit::with(['type', 'parents', 'children', 'specialty'])->orderBy('alias')->get();
         
-        $groupedUnits = $this->getGroupedByLevel($allUnits);
+        // Formateo para los x-searchable-select (Requieren 'id' y 'name')
+        $typesOptions = $types->map(function($t) {
+            return ['id' => $t->id, 'name' => $t->description];
+        })->toArray();
+
+        $serviceUnitsOptions = $serviceUnits->map(function($u) {
+            return ['id' => $u->id, 'name' => $u->alias];
+        })->toArray();
 
         return view('livewire.hierarchical-units.manager', [
-            'types' => $types,
+            'typesOptions' => $typesOptions,
+            'serviceUnitsOptions' => $serviceUnitsOptions,
             'specialties' => Speciality::orderBy('name')->get(),
             'formSearchUnits' => HierarchicalUnit::when($this->search_parents, function($q) {
                                 $q->where('alias', 'like', '%' . $this->search_parents . '%');
                             })->orderBy('alias')->get(),
-            'serviceUnits' => $serviceUnits,
             'isServicioSelected' => $isServicioSelected,
-            'groupedUnits' => $groupedUnits,
-            // Pasamos el mapa directamente a la vista
-            'relationsMap' => $this->getRelationsMap(),
+            
+            // Data Tablero
+            'groupedUnits' => $this->getGroupedByLevel($allUnits),
+            'relationsMap' => $this->cloneRelationsMap(),
+            'unitsData' => $allUnits->keyBy('id')->map(fn($u) => ['alias' => strtolower($u->alias)])->toArray(),
+            
+            // Data Grafo
+            'networkData' => $this->getNetworkData(),
         ]);
+    }
+
+    // --- ACCIONES ---
+
+    public function createChild($parentId)
+    {
+        $this->resetForm();
+        // Forzamos al padre casteando a string para el checkbox
+        $this->parent_ids = [(string)$parentId];
+        $this->showPanel = true;
     }
 
     public function openPanel($id = null)
@@ -133,7 +182,7 @@ class Manager extends Component
             $this->type_id = $unit->type_id;
             $this->hierarchical_unit_id_to_report = $unit->hierarchical_unit_id_to_report;
             $this->clinical_specialty_id = $unit->clinical_specialty_id;
-            $this->parent_ids = $unit->parents->pluck('id')->toArray();
+            $this->parent_ids = $unit->parents->pluck('id')->map(fn($id) => (string)$id)->toArray();
             
             $this->is_editing = true;
         }
@@ -149,22 +198,27 @@ class Manager extends Component
 
     public function save()
     {
-        $validated = $this->validate([
+        $rules = [
             'alias' => ['required', 'string', 'max:255'],
             'type_id' => ['required', 'exists:hierarchical_unit_types,id'],
             'hierarchical_unit_id_to_report' => ['nullable', 'exists:hierarchical_units,id'],
             'parent_ids' => ['array'],
             'parent_ids.*' => ['exists:hierarchical_units,id'],
-        ], [
-            'alias.required' => 'El nombre de la unidad es obligatorio.',
-            'type_id.required' => 'Debes seleccionar una categoría.',
-        ]);
+        ];
 
         $types = HierarchicalUnitType::all();
         $type = $types->firstWhere('id', $this->type_id);
         
         if ($type && stripos($type->description, 'servicio') !== false) {
-            $this->validate(['clinical_specialty_id' => ['nullable', 'exists:specialities,id']]);
+            $rules['clinical_specialty_id'] = ['nullable', 'exists:specialities,id'];
+        }
+
+        $validated = $this->validate($rules, [
+            'alias.required' => 'El nombre de la unidad es obligatorio.',
+            'type_id.required' => 'Debes seleccionar una categoría.',
+        ]);
+
+        if ($type && stripos($type->description, 'servicio') !== false) {
             $validated['clinical_specialty_id'] = $this->clinical_specialty_id;
         } else {
             $validated['clinical_specialty_id'] = null; 
@@ -191,8 +245,9 @@ class Manager extends Component
         session()->flash('status', $this->is_editing ? 'Unidad actualizada correctamente.' : 'Unidad creada con éxito.');
         $this->closePanel();
         
-        // Magia: Enviamos un evento con el mapa fresco para que JS lo atrape silenciosamente
-        $this->dispatch('relations-updated', map: $this->getRelationsMap());
+        // Avisamos a las dos interfaces JS que hay datos nuevos
+        $this->dispatch('relations-updated', map: $this->cloneRelationsMap());
+        $this->dispatch('network-updated', data: $this->getNetworkData());
     }
 
     public function delete()
@@ -202,8 +257,8 @@ class Manager extends Component
             session()->flash('status', 'Unidad eliminada correctamente.');
             $this->closePanel();
             
-            // Magia: Enviamos un evento con el mapa fresco para que JS lo atrape silenciosamente
-            $this->dispatch('relations-updated', map: $this->getRelationsMap());
+            $this->dispatch('relations-updated', map: $this->cloneRelationsMap());
+            $this->dispatch('network-updated', data: $this->getNetworkData());
         }
     }
 
