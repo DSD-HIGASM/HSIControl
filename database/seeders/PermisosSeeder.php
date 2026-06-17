@@ -2,29 +2,30 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermisosSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         // Limpiar la caché de permisos de Spatie
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Crear el catálogo de permisos base del sistema
+        // Catálogo maestro de permisos del sistema
         $permisos = [
             'configurar.documentos',
+            'configurar.ocupaciones',
             'configurar.roles',
+            'configurar.roles.hsi',
             'configurar.profesiones',
             'configurar.especialidades',
             'configurar.usuarios',
             'configurar.servicios',
+            'gestionar.usuarios',
+            'gestionar.permisos',
             'ver.logs',
             'crear.agente',
             'editar.informacion',
@@ -33,12 +34,21 @@ class PermisosSeeder extends Seeder
             'editar.documentos'
         ];
 
-        // Cargar los permisos en la base de datos
+        // 1. Crear o verificar permisos
         foreach ($permisos as $permiso) {
             Permission::firstOrCreate([
                 'name' => $permiso,
                 'guard_name' => 'web'
             ]);
         }
+
+        // 2. Crear el Rol de Super Administrador (si no existe)
+        $superAdminRole = Role::firstOrCreate([
+            'name' => 'Super Administrador',
+            'guard_name' => 'web'
+        ]);
+
+        // 3. Asignarle todos los permisos existentes al Super Admin
+        $superAdminRole->syncPermissions(Permission::all());
     }
 }
