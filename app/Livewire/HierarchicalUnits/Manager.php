@@ -22,14 +22,8 @@ class Manager extends Component
     public $is_editing = false;
     public $showPanel = false;
 
-    public array $relationsMap = [];
-
-    public function mount()
-    {
-        $this->updateRelationsMap();
-    }
-
-    private function updateRelationsMap()
+    // Función privada para armar el mapa. Ya no es una variable pública.
+    private function getRelationsMap()
     {
         $allUnits = HierarchicalUnit::with(['parents', 'children'])->get();
         $map = [];
@@ -39,20 +33,17 @@ class Manager extends Component
                 'children' => $unit->children->pluck('id')->toArray(),
             ];
         }
-        $this->relationsMap = $map;
+        return $map;
     }
 
-    // Calculamos el nivel (profundidad) de cada unidad en el árbol
     private function getGroupedByLevel($allUnits)
     {
         $depths = [];
         
-        // Asignamos 1 a los nodos raíz (sin padres), 0 al resto
         foreach ($allUnits as $unit) {
             $depths[$unit->id] = $unit->parents->isEmpty() ? 1 : 0;
         }
 
-        // Iteramos para empujar a los hijos a los niveles correctos
         $changed = true;
         $limit = 0;
         while ($changed && $limit < 30) {
@@ -84,17 +75,16 @@ class Manager extends Component
             $limit++;
         }
 
-        // Agrupamos por los niveles calculados
         $grouped = [];
         foreach ($allUnits as $unit) {
-            $lvl = $depths[$unit->id] ?? 99; // 99 es para atajar errores si el usuario crea un bucle infinito circular
+            $lvl = $depths[$unit->id] ?? 99; 
             if (!isset($grouped[$lvl])) {
                 $grouped[$lvl] = [];
             }
             $grouped[$lvl][] = $unit;
         }
         
-        ksort($grouped); // Ordenamos del Nivel 1 en adelante
+        ksort($grouped);
         return $grouped;
     }
 
@@ -116,7 +106,6 @@ class Manager extends Component
 
         $allUnits = HierarchicalUnit::with(['type', 'parents', 'children'])->orderBy('alias')->get();
         
-        // Generamos las columnas basadas en el nivel
         $groupedUnits = $this->getGroupedByLevel($allUnits);
 
         return view('livewire.hierarchical-units.manager', [
@@ -128,6 +117,8 @@ class Manager extends Component
             'serviceUnits' => $serviceUnits,
             'isServicioSelected' => $isServicioSelected,
             'groupedUnits' => $groupedUnits,
+            // Pasamos el mapa directamente a la vista
+            'relationsMap' => $this->getRelationsMap(),
         ]);
     }
 
@@ -200,7 +191,8 @@ class Manager extends Component
         session()->flash('status', $this->is_editing ? 'Unidad actualizada correctamente.' : 'Unidad creada con éxito.');
         $this->closePanel();
         
-        $this->updateRelationsMap();
+        // Magia: Enviamos un evento con el mapa fresco para que JS lo atrape silenciosamente
+        $this->dispatch('relations-updated', map: $this->getRelationsMap());
     }
 
     public function delete()
@@ -210,7 +202,8 @@ class Manager extends Component
             session()->flash('status', 'Unidad eliminada correctamente.');
             $this->closePanel();
             
-            $this->updateRelationsMap();
+            // Magia: Enviamos un evento con el mapa fresco para que JS lo atrape silenciosamente
+            $this->dispatch('relations-updated', map: $this->getRelationsMap());
         }
     }
 
