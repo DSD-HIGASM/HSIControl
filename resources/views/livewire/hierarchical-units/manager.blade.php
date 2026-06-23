@@ -392,18 +392,22 @@
             relations: initialMap,
             unitsDict: unitsData,
             searchQuery: '',
-            
+
             lineageFilterId: null,
             contextMenu: { show: false, x: 0, y: 0, unitId: null },
-            
+
             activeNode: null, activeParents: [], activeChildren: [],
             isDragging: false, startX: 0, scrollLeft: 0,
 
             init() {
                 window.addEventListener('relations-updated', (e) => {
                     this.relations = e.detail.map;
+                    if (e.detail.unitsData) {
+                        this.unitsDict = e.detail.unitsData;
+                    }
                     this.clearHover();
-                    if(this.lineageFilterId) this.syncGraphFilter(); 
+
+                    if (this.lineageFilterId) this.syncGraphFilter();
                 });
 
                 window.addEventListener('open-context-menu', (e) => {
@@ -418,7 +422,6 @@
                     this.contextMenu.show = true;
                 });
 
-                // NUEVO: Escuchamos el evento de cierre seguro
                 window.addEventListener('close-context-menu', () => {
                     this.closeContextMenu();
                 });
@@ -435,7 +438,7 @@
                 this.contextMenu.y = y;
                 this.contextMenu.show = true;
             },
-            
+
             closeContextMenu() {
                 this.contextMenu.show = false;
             },
@@ -445,21 +448,21 @@
                 lineage.add(startId);
 
                 let upQueue = [startId];
-                while(upQueue.length > 0) {
+                while (upQueue.length > 0) {
                     let curr = upQueue.shift();
-                    if(this.relations[curr]) {
+                    if (this.relations[curr]) {
                         this.relations[curr].parents.forEach(p => {
-                            if(!lineage.has(p)) { lineage.add(p); upQueue.push(p); }
+                            if (!lineage.has(p)) { lineage.add(p); upQueue.push(p); }
                         });
                     }
                 }
 
                 let downQueue = [startId];
-                while(downQueue.length > 0) {
+                while (downQueue.length > 0) {
                     let curr = downQueue.shift();
-                    if(this.relations[curr]) {
+                    if (this.relations[curr]) {
                         this.relations[curr].children.forEach(c => {
-                            if(!lineage.has(c)) { lineage.add(c); downQueue.push(c); }
+                            if (!lineage.has(c)) { lineage.add(c); downQueue.push(c); }
                         });
                     }
                 }
@@ -468,14 +471,14 @@
 
             setLineageFilter(id) {
                 this.lineageFilterId = id;
-                this.searchQuery = ''; 
+                this.searchQuery = '';
                 this.closeContextMenu();
-                this.syncGraphFilter(); 
+                this.syncGraphFilter();
             },
 
             clearLineageFilter() {
                 this.lineageFilterId = null;
-                this.syncGraphFilter(); 
+                this.syncGraphFilter();
             },
 
             syncGraphFilter() {
@@ -485,14 +488,14 @@
 
             get visibleNodes() {
                 if (this.lineageFilterId) return this.getLineage(this.lineageFilterId);
-                
+
                 if (this.searchQuery) {
                     const query = this.searchQuery.toLowerCase();
                     let matched = new Set();
                     for (const [id, unit] of Object.entries(this.unitsDict)) {
                         if (unit.alias.includes(query)) {
                             matched.add(parseInt(id));
-                            if(this.relations[id]) {
+                            if (this.relations[id]) {
                                 this.relations[id].parents.forEach(p => matched.add(p));
                                 this.relations[id].children.forEach(c => matched.add(c));
                             }
@@ -512,20 +515,20 @@
             endDrag() { this.isDragging = false; },
             onDrag(e) { if (!this.isDragging) return; e.preventDefault(); const x = e.pageX - this.$refs.scrollContainer.offsetLeft; this.$refs.scrollContainer.scrollLeft = this.scrollLeft - (x - this.startX) * 1.5; },
 
-            hoverNode(id) { 
-                if(this.contextMenu.show) return; 
-                this.activeNode = id; this.activeParents = this.relations[id]?.parents || []; this.activeChildren = this.relations[id]?.children || []; 
+            hoverNode(id) {
+                if (this.contextMenu.show) return;
+                this.activeNode = id; this.activeParents = this.relations[id]?.parents || []; this.activeChildren = this.relations[id]?.children || [];
             },
             clearHover() { this.activeNode = null; this.activeParents = []; this.activeChildren = []; },
             isParent(id) { return this.activeParents.includes(id); },
             isChild(id) { return this.activeChildren.includes(id); },
-            
+
             getNodeClass(id) {
                 if (this.activeNode === null && this.contextMenu.unitId !== id) return 'border-gray-200 opacity-100 hover:border-brand-cyan hover:shadow-md';
                 if (this.activeNode === id || this.contextMenu.unitId === id) return 'border-brand-cyan ring-2 ring-brand-cyan/20 opacity-100 z-10';
                 if (this.isParent(id)) return 'border-amber-400 opacity-100 shadow-md ring-1 ring-amber-400/50';
                 if (this.isChild(id)) return 'border-emerald-400 opacity-100 shadow-md ring-1 ring-emerald-400/50';
-                return 'border-gray-100 opacity-30 grayscale-[50%]'; 
+                return 'border-gray-100 opacity-30 grayscale-[50%]';
             }
         }))
     });
@@ -533,64 +536,42 @@
     // --- LÓGICA DEL GRAFO (Vis.js) ---
     document.addEventListener('livewire:initialized', () => {
         allNetworkData = @json($networkData);
-        
-        // Usamos el objeto global vis inyectado desde app.js
-        const nodes = new vis.DataSet(allNetworkData.nodes);
-        const edges = new vis.DataSet(allNetworkData.edges);
-        
+
+        const { Network, DataSet } = window.vis;
+        const nodes = new DataSet(allNetworkData.nodes);
+        const edges = new DataSet(allNetworkData.edges);
+
         const container = document.getElementById('hospital-network');
         const data = { nodes: nodes, edges: edges };
-        
+
         const options = {
             layout: { hierarchical: { enabled: true, direction: 'LR', sortMethod: 'directed', nodeSpacing: 70, levelSeparation: 350, treeSpacing: 120, parentCentralization: true } },
-            physics: { enabled: false }, 
+            physics: { enabled: false },
             nodes: {
-                shape: 'box', 
+                shape: 'box',
                 margin: { top: 12, right: 18, bottom: 12, left: 18 },
-                font: { 
+                font: {
                     multi: 'html',
-                    face: '"Encode Sans", sans-serif', // Fuente de respaldo
-                    bold: { 
-                        size: 14, 
-                        color: '#1e293b', 
-                        face: '"Encode Sans", sans-serif' // Tipografía Principal (Nombre)
-                    }, 
-                    ital: { 
-                        size: 10, 
-                        color: '#64748b', 
-                        face: 'Roboto, sans-serif',       // Tipografía Secundaria (Tipo)
-                        mod: 'normal' 
-                    }
+                    face: '"Encode Sans", sans-serif',
+                    bold: { size: 14, color: '#1e293b', face: '"Encode Sans", sans-serif' },
+                    ital: { size: 10, color: '#64748b', face: 'Roboto, sans-serif', mod: 'normal' }
                 },
-                color: { 
-                    background: '#ffffff', 
-                    border: '#06b6d4', 
-                    highlight: { background: '#ecfeff', border: '#0891b2' }, 
-                    hover: { background: '#f8fafc', border: '#0ea5e9' } 
-                },
-                borderWidth: 2, 
-                borderWidthSelected: 3, 
-                shapeProperties: { borderRadius: 6 },
+                color: { background: '#ffffff', border: '#06b6d4', highlight: { background: '#ecfeff', border: '#0891b2' }, hover: { background: '#f8fafc', border: '#0ea5e9' } },
+                borderWidth: 2, borderWidthSelected: 3, shapeProperties: { borderRadius: 6 },
                 shadow: { enabled: true, color: 'rgba(0,0,0,0.05)', size: 6, x: 0, y: 3 }
             },
-            edges: { 
-                arrows: { to: { enabled: true, scaleFactor: 0.7 } }, 
-                color: { color: '#cbd5e1', highlight: '#0d9488', hover: '#94a3b8' }, 
-                smooth: { type: 'cubicBezier', forceDirection: 'horizontal', roundness: 0.6 }, 
-                width: 1.5, hoverWidth: 2, selectionWidth: 2 
-            },
+            edges: { arrows: { to: { enabled: true, scaleFactor: 0.7 } }, color: { color: '#cbd5e1', highlight: '#0d9488', hover: '#94a3b8' }, smooth: { type: 'cubicBezier', forceDirection: 'horizontal', roundness: 0.6 }, width: 1.5, hoverWidth: 2, selectionWidth: 2 },
             interaction: { hover: true, dragNodes: false, zoomView: true, dragView: true }
         };
 
-        network = new vis.Network(container, data, options);
+        network = new Network(container, data, options);
 
-        // NUEVO: Clic maneja apertura/cierre de forma segura
         network.on("click", function (params) {
             if (params.nodes.length > 0) {
                 const nodeId = params.nodes[0];
                 const DOMCoord = params.pointer.DOM;
                 const rect = container.getBoundingClientRect();
-                
+
                 window.dispatchEvent(new CustomEvent('open-context-menu', {
                     detail: { id: nodeId, x: DOMCoord.x + rect.left, y: DOMCoord.y + rect.top }
                 }));
@@ -599,14 +580,12 @@
             }
         });
 
-        // NUEVO: Si arrastrás el mapa, también se cierra el menú
         network.on("dragStart", function () {
             window.dispatchEvent(new Event('close-context-menu'));
         });
 
         window.addEventListener('network-updated', (event) => {
             allNetworkData = event.detail.data;
-            document.querySelector('[x-data]').__x.$data.syncGraphFilter();
         });
 
         window.addEventListener('filter-graph', (e) => {

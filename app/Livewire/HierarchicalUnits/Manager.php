@@ -29,7 +29,6 @@ class Manager extends Component
 
     public $showPanel = false;
 
-    // 1. Datos para el Tablero
     private function cloneRelationsMap()
     {
         $allUnits = HierarchicalUnit::with(['parents', 'children'])->get();
@@ -96,7 +95,6 @@ class Manager extends Component
         return $grouped;
     }
 
-    // 2. Datos para el Grafo Vis.js
     private function getNetworkData()
     {
         $allUnits = HierarchicalUnit::with(['type', 'parents'])->get();
@@ -104,27 +102,25 @@ class Manager extends Component
         $edges = [];
 
         foreach ($allUnits as $unit) {
-    // 1. Obtenemos los datos limpios
-    $tipo = $unit->type->description ?? 'Sin Tipo';
-    $nombreCorto = wordwrap($unit->alias, 500, "\n");
+            $tipo = $unit->type->description ?? 'Sin Tipo';
+            $nombreCorto = wordwrap($unit->alias, 25, "\n");
 
-    // 2. Construcción segura del string con etiquetas HTML
-    // Usamos strtoupper solo en el Tipo si querés mantener el estilo corporativo
-    $label = "<b>" . $nombreCorto . "</b>" . "\n" . "<i>" . strtoupper($tipo) . "</i>";
+            // Construcción del texto: Nombre en negrita arriba, Tipo en cursiva(modificada) abajo
+            $label = '<b>'.$nombreCorto."</b>\n<i>".strtoupper($tipo).'</i>';
 
-    $nodes[] = [
-        'id' => $unit->id,
-        'label' => $label,
-        'title' => 'Opciones de la unidad',
-    ];
+            $nodes[] = [
+                'id' => $unit->id,
+                'label' => $label,
+                'title' => 'Opciones de la unidad',
+            ];
 
-    foreach ($unit->parents as $parent) {
-        $edges[] = [
-            'from' => $parent->id,
-            'to' => $unit->id,
-        ];
-    }
-}
+            foreach ($unit->parents as $parent) {
+                $edges[] = [
+                    'from' => $parent->id,
+                    'to' => $unit->id,
+                ];
+            }
+        }
 
         return ['nodes' => $nodes, 'edges' => $edges];
     }
@@ -147,7 +143,6 @@ class Manager extends Component
 
         $allUnits = HierarchicalUnit::with(['type', 'parents', 'children', 'specialty'])->orderBy('alias')->get();
 
-        // Formateo para los x-searchable-select (Requieren 'id' y 'name')
         $typesOptions = $types->map(function ($t) {
             return ['id' => $t->id, 'name' => $t->description];
         })->toArray();
@@ -165,22 +160,17 @@ class Manager extends Component
             })->orderBy('alias')->get(),
             'isServicioSelected' => $isServicioSelected,
 
-            // Data Tablero
             'groupedUnits' => $this->getGroupedByLevel($allUnits),
             'relationsMap' => $this->cloneRelationsMap(),
             'unitsData' => $allUnits->keyBy('id')->map(fn ($u) => ['alias' => strtolower($u->alias)])->toArray(),
 
-            // Data Grafo
             'networkData' => $this->getNetworkData(),
         ]);
     }
 
-    // --- ACCIONES ---
-
     public function createChild($parentId)
     {
         $this->resetForm();
-        // Forzamos al padre casteando a string para el checkbox
         $this->parent_ids = [(string) $parentId];
         $this->showPanel = true;
     }
@@ -260,8 +250,13 @@ class Manager extends Component
         session()->flash('status', $this->is_editing ? 'Unidad actualizada correctamente.' : 'Unidad creada con éxito.');
         $this->closePanel();
 
-        // Avisamos a las dos interfaces JS que hay datos nuevos
-        $this->dispatch('relations-updated', map: $this->cloneRelationsMap());
+        $allUnits = HierarchicalUnit::with(['type', 'parents', 'children', 'specialty'])->orderBy('alias')->get();
+
+        // Despachamos datos sincronizados para que Alpine JS no se rompa al crear/editar
+        $this->dispatch('relations-updated',
+            map: $this->cloneRelationsMap(),
+            unitsData: $allUnits->keyBy('id')->map(fn ($u) => ['alias' => strtolower($u->alias)])->toArray()
+        );
         $this->dispatch('network-updated', data: $this->getNetworkData());
     }
 
@@ -272,7 +267,12 @@ class Manager extends Component
             session()->flash('status', 'Unidad eliminada correctamente.');
             $this->closePanel();
 
-            $this->dispatch('relations-updated', map: $this->cloneRelationsMap());
+            $allUnits = HierarchicalUnit::with(['type', 'parents', 'children', 'specialty'])->orderBy('alias')->get();
+
+            $this->dispatch('relations-updated',
+                map: $this->cloneRelationsMap(),
+                unitsData: $allUnits->keyBy('id')->map(fn ($u) => ['alias' => strtolower($u->alias)])->toArray()
+            );
             $this->dispatch('network-updated', data: $this->getNetworkData());
         }
     }

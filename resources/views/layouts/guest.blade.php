@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Control HSI - San Martín') }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('applogo.svg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,8 +37,7 @@
                     <x-logos.hospital-color class="h-32 xl:h-40 w-auto drop-shadow-sm" />
                 </div>
 
-                <h1 class="text-4xl xl:text-5xl font-extrabold text-brand-cyan tracking-tight text-center mb-3">Control
-                    de HSI</h1>
+                <h1 class="text-4xl xl:text-5xl font-extrabold text-brand-cyan tracking-tight text-center mb-3">HSIControl</h1>
                 <p class="font-secondary text-brand-gray-custom text-xl font-medium tracking-wide text-center">Hospital
                     Interzonal General de Agudos<br>Gral. San Martín</p>
 

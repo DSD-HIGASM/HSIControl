@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
-class searchable-select extends Component
+class searchable_select extends Component
 {
     /**
      * Create a new component instance.

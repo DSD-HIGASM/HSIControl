@@ -6,11 +6,11 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'HSI Control') }}</title>
+        <link rel="icon" type="image/x-icon" href="{{ asset('applogo.svg') }}">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-        <link rel="icon" type="image/x-icon" href="{{ asset('applogo.svg') }}">
 
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
