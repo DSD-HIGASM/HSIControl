@@ -15,7 +15,7 @@ use App\Models\Service;
 use App\Models\HierarchicalUnit;
 use App\Models\HsiRole;
 use App\Models\DocumentType;
-use App\Models\AgentNotes; // Importación corregida
+use App\Models\AgentNotes; 
 use App\Enums\RegistrationScope;
 use App\Enums\RegistrationType;
 use App\Enums\AgentGender;
@@ -47,6 +47,12 @@ class AgentDashboard extends Component
     public bool $showDocModal = false;
     public bool $showHsiModal = false; 
     public bool $showNoteModal = false;
+    public bool $showConfirmModal = false; // NUEVO: Modal genérico de confirmación
+
+    // --- VARIABLES DE CONFIRMACIÓN GENÉRICA ---
+    public ?string $confirmingAction = null;
+    public ?int $confirmingId = null;
+    public string $confirmingMessage = '';
 
     // --- VARIABLES DE FORMULARIOS ---
     
@@ -101,8 +107,37 @@ class AgentDashboard extends Component
             'residencies.currentUnit',
             'serviceBosses.service',
             'hierarchicalUnits',
-            'notes' // [Inferencia] Asumo que el método de relación en tu modelo Agent se llama "notes()"
+            'notes'
         ]);
+    }
+
+    // ==========================================
+    // LÓGICA: CONFIRMACIÓN UNIVERSAL
+    // ==========================================
+    public function confirmAction($action, $id, $message)
+    {
+        $this->confirmingAction = $action;
+        $this->confirmingId = $id;
+        $this->confirmingMessage = $message;
+        $this->showConfirmModal = true;
+    }
+
+    public function executeAction()
+    {
+        if ($this->confirmingAction && $this->confirmingId) {
+            switch ($this->confirmingAction) {
+                case 'profession': $this->deleteProfession($this->confirmingId); break;
+                case 'registration': $this->deleteRegistration($this->confirmingId); break;
+                case 'residency': $this->deleteResidency($this->confirmingId); break;
+                case 'boss': $this->deleteServiceBoss($this->confirmingId); break;
+                case 'role': $this->deleteRole($this->confirmingId); break;
+                case 'unit': $this->deleteUnit($this->confirmingId); break;
+                case 'document': $this->deleteDocument($this->confirmingId); break;
+                case 'note': $this->deleteNote($this->confirmingId); break;
+            }
+        }
+        $this->showConfirmModal = false;
+        $this->reset(['confirmingAction', 'confirmingId', 'confirmingMessage']);
     }
 
     // ==========================================
@@ -170,7 +205,7 @@ class AgentDashboard extends Component
     public function editNote($id)
     {
         $this->resetValidation();
-        $note = AgentNotes::find($id); // Uso del modelo corregido
+        $note = AgentNotes::find($id); 
         
         if ($note) {
             $this->note_id = $note->id;
@@ -187,7 +222,7 @@ class AgentDashboard extends Component
             'note_content' => 'required|string',
         ]);
 
-        AgentNotes::updateOrCreate( // Uso del modelo corregido
+        AgentNotes::updateOrCreate( 
             ['id' => $this->note_id],
             [
                 'agent_id' => $this->agent->id, 
@@ -202,7 +237,7 @@ class AgentDashboard extends Component
 
     public function deleteNote($id)
     {
-        AgentNotes::find($id)?->delete(); // Uso del modelo corregido
+        AgentNotes::find($id)?->delete();
         $this->refreshAgentData();
     }
 
@@ -369,7 +404,7 @@ class AgentDashboard extends Component
 
     public function deleteRole($id)
     {
-        HsiRoleAgent::where('agent_id', $this->agent->id)->where('hsi_role_id', $id)->delete();
+        $this->agent->hsiRoles()->detach($id);
         $this->refreshAgentData();
     }
 

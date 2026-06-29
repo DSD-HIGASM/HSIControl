@@ -1,14 +1,11 @@
 <div class="min-h-screen bg-gray-50 py-8 relative" x-data="{ activeTab: @entangle('tab') }">
     <style>
-        [x-cloak] {
-            display: none !important;
-        }
+        [x-cloak] { display: none !important; }
     </style>
 
     <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
 
         <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
-
             <div class="flex items-center gap-2 text-sm font-secondary text-gray-500">
                 <a href="{{ route('agents.index') }}" wire:navigate
                     class="hover:text-brand-cyan transition-colors flex items-center gap-1 font-bold">
@@ -22,7 +19,6 @@
             </div>
 
             <div class="flex items-center gap-3">
-
                 @if (($agent->gender) && ($agent->gender->value == 'pendiente'))
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-lg shadow-sm">
                         <x-heroicon-s-exclamation-triangle class="w-4 h-4 text-red-500" />
@@ -43,7 +39,6 @@
                     <x-heroicon-o-printer class="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                     Imprimir Ficha
                 </a>
-
             </div>
         </div>
 
@@ -55,7 +50,6 @@
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 {{ $agent->status->color() ?? 'bg-gray-400' }}"></div>
-
             <div class="flex flex-col md:flex-row gap-6 items-start md:items-center">
                 <div class="h-20 w-20 rounded-full bg-white flex items-center justify-center font-bold text-2xl border-4 shrink-0 {{ $agent->status->color() ?? 'border-gray-200 text-gray-500' }}">
                     {{ strtoupper($initials) }}
@@ -64,8 +58,7 @@
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-1">
                         <h1 class="text-2xl font-bold text-gray-900 uppercase tracking-tight">
-                            {{ $agent->last_name }} {{ $agent->second_last_name }}, {{ $agent->first_name }}
-                            {{ $agent->second_first_name }}
+                            {{ $agent->last_name }} {{ $agent->second_last_name }}, {{ $agent->first_name }} {{ $agent->second_first_name }}
                         </h1>
                         <span class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ring-1 ring-inset font-secondary tracking-wider {{ $agent->status->color() ?? 'bg-gray-100' }}">
                             {{ strtoupper($statusValue) }}
@@ -75,8 +68,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-y-3 gap-x-6 mt-4 text-sm font-secondary">
                         <div class="flex items-center gap-2 text-gray-600">
                             <x-heroicon-o-identification class="w-4 h-4 text-gray-400" />
-                            <span class="font-bold text-gray-800">DNI:</span>
-                            {{ number_format($agent->dni, 0, ',', '.') }}
+                            <span class="font-bold text-gray-800">DNI:</span> {{ number_format($agent->dni, 0, ',', '.') }}
                         </div>
 
                         @if($agent->person_id)
@@ -84,8 +76,7 @@
                                 target="_blank"
                                 class="flex items-center gap-2 text-brand-cyan hover:text-brand-cyan-dark transition-colors group">
                                 <x-heroicon-o-finger-print class="w-4 h-4" />
-                                <span class="font-bold text-gray-800 group-hover:text-brand-cyan-dark">ID HSI:</span>
-                                {{ $agent->person_id }}
+                                <span class="font-bold text-gray-800 group-hover:text-brand-cyan-dark">ID HSI:</span> {{ $agent->person_id }}
                             </a>
                         @else
                             <div class="flex items-center gap-2 text-gray-400 italic">
@@ -102,14 +93,12 @@
                         <a href="https://wa.me/549{{ preg_replace('/[^0-9]/', '', $agent->phone) }}" target="_blank"
                             class="flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors group">
                             <x-heroicon-o-phone class="w-4 h-4" />
-                            <span class="font-bold text-gray-800 group-hover:text-green-700">Tel:</span>
-                            {{ $agent->phone }}
+                            <span class="font-bold text-gray-800 group-hover:text-green-700">Tel:</span> {{ $agent->phone }}
                         </a>
 
                         <div class="flex items-center gap-2 text-gray-600 md:col-span-4">
                             <x-heroicon-o-building-office-2 class="w-4 h-4 text-gray-400" />
-                            <span class="font-bold text-gray-800">Servicio Base:</span>
-                            {{ $agent->service->name ?? 'Sin asignar' }}
+                            <span class="font-bold text-gray-800">Servicio Base:</span> {{ $agent->service->name ?? 'Sin asignar' }}
                         </div>
                     </div>
                 </div>
@@ -138,9 +127,10 @@
                     class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-colors font-secondary flex items-center gap-2 relative">
                     <x-heroicon-o-folder-open class="w-4 h-4" /> Legajo Digital
                     @if($missingMandatoryTypes->count() > 0)
-                        <span class="absolute top-3 -right-2 flex h-2 w-2"><span
-                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-pink opacity-75"></span><span
-                                class="relative inline-flex rounded-full h-2 w-2 bg-brand-pink"></span></span>
+                        <span class="absolute top-3 -right-2 flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-pink opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-pink"></span>
+                        </span>
                     @endif
                 </a>
                 <a href="#" @click.prevent="activeTab = 'notas'"
@@ -168,10 +158,7 @@
             },
             initTabsSlider() {
                 this.updateHeight();
-                this.$watch('activeTab', () => {
-                    setTimeout(() => this.updateHeight(), 50);
-                });
-                // ResizeObserver actualiza automáticamente la altura si Livewire agrega/quita contenido (ej: nuevas notas)
+                this.$watch('activeTab', () => { setTimeout(() => this.updateHeight(), 50); });
                 const resizeObserver = new ResizeObserver(() => this.updateHeight());
                 this.tabs.forEach(tab => {
                     let el = this.$refs['tab_' + tab];
@@ -181,8 +168,7 @@
         }" x-init="initTabsSlider()">
         
             <div class="relative w-full overflow-hidden transition-[height] duration-500 ease-in-out" x-ref="tabContainer" x-cloak>
-                <div class="flex transition-transform duration-500 ease-in-out items-start w-full"
-                     :style="`transform: translateX(-${activeIndex * 100}%)`">
+                <div class="flex transition-transform duration-500 ease-in-out items-start w-full" :style="`transform: translateX(-${activeIndex * 100}%)`">
 
                     <!-- TAB: PERSONAL -->
                     <div x-ref="tab_personal" class="w-full flex-shrink-0 px-1 pb-4" :inert="activeTab !== 'personal'">
@@ -212,7 +198,6 @@
                     <!-- TAB: PROFESIONAL -->
                     <div x-ref="tab_profesional" class="w-full flex-shrink-0 px-1 pb-4" :inert="activeTab !== 'profesional'">
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <!-- Columna 1 -->
                             <div class="space-y-6">
                                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
                                     <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
@@ -240,8 +225,7 @@
                                                         @endif
                                                     </div>
                                                     @can('editar.profesiones')
-                                                        <button wire:click="deleteProfession({{ $vinculacion->id }})"
-                                                            wire:confirm="¿Seguro que deseas eliminar esta profesión?"
+                                                        <button wire:click="confirmAction('profession', {{ $vinculacion->id }}, '¿Seguro que deseas eliminar esta profesión y todas sus matrículas?')"
                                                             class="text-gray-400 transition-colors hover:text-brand-pink">
                                                             <x-heroicon-o-trash class="w-4 h-4" />
                                                         </button>
@@ -271,8 +255,7 @@
                                                                         </div>
                                                                     </div>
                                                                     @can('editar.profesiones')
-                                                                        <button wire:click="deleteRegistration({{ $reg->id }})"
-                                                                            wire:confirm="¿Borrar matrícula?"
+                                                                        <button wire:click="confirmAction('registration', {{ $reg->id }}, '¿Seguro que deseas borrar esta matrícula?')"
                                                                             class="text-gray-400 transition-colors hover:text-brand-pink">
                                                                             <x-heroicon-o-trash class="w-4 h-4" />
                                                                         </button>
@@ -292,7 +275,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Columna 2 -->
                             <div class="space-y-6">
                                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden {{ $agent->residencies->isEmpty() ? 'border-dashed' : '' }}">
                                     <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
@@ -320,7 +302,7 @@
                                                             </div>
                                                         </div>
                                                         @can('editar.profesiones')
-                                                            <button wire:click="deleteResidency({{ $residency->id }})" wire:confirm="¿Borrar residencia?" class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                            <button wire:click="confirmAction('residency', {{ $residency->id }}, '¿Seguro que deseas borrar esta residencia?')" class="text-gray-400 transition-colors hover:text-brand-pink">
                                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                                             </button>
                                                         @endcan
@@ -360,7 +342,7 @@
                                                             </div>
                                                         </div>
                                                         @can('editar.profesiones')
-                                                            <button wire:click="deleteServiceBoss({{ $boss->id }})" wire:confirm="¿Revocar jefatura?" class="transition-colors text-amber-600 hover:text-brand-pink">
+                                                            <button wire:click="confirmAction('boss', {{ $boss->id }}, '¿Seguro que deseas revocar esta jefatura?')" class="transition-colors text-amber-600 hover:text-brand-pink">
                                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                                             </button>
                                                         @endcan
@@ -399,7 +381,7 @@
                                                         <td class="px-5 py-3.5 font-bold text-gray-900">{{ $role->name }}</td>
                                                         <td class="px-5 py-3.5 text-right">
                                                             @can('editar.accesos')
-                                                                <button wire:click="deleteRole({{ $role->id }})" wire:confirm="¿Quitar rol HSI?" class="text-gray-400 hover:text-brand-pink transition-colors">
+                                                                <button wire:click="confirmAction('role', {{ $role->id }}, '¿Seguro que deseas quitar este rol del sistema HSI?')" class="text-gray-400 hover:text-brand-pink transition-colors">
                                                                     <x-heroicon-o-trash class="w-4 h-4" />
                                                                 </button>
                                                             @endcan
@@ -465,7 +447,7 @@
                                                         </div>
                                                     </div>
                                                     @can('editar.accesos')
-                                                        <button wire:click="deleteUnit({{ $unit->id }})" wire:confirm="¿Desvincular unidad?" class="transition-colors text-gray-400 hover:text-brand-pink">
+                                                        <button wire:click="confirmAction('unit', {{ $unit->id }}, '¿Seguro que deseas desvincular esta unidad jerárquica?')" class="transition-colors text-gray-400 hover:text-brand-pink">
                                                             <x-heroicon-o-trash class="w-4 h-4" />
                                                         </button>
                                                     @endcan
@@ -531,7 +513,7 @@
                                                     <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Bajar
                                                 </a>
                                                 @can('editar.documentos')
-                                                    <button wire:click="deleteDocument({{ $doc->id }})" wire:confirm="¿Borrar documento?" class="text-gray-400 hover:text-brand-pink">
+                                                    <button wire:click="confirmAction('document', {{ $doc->id }}, '¿Seguro que deseas eliminar este documento comprobante?')" class="text-gray-400 hover:text-brand-pink">
                                                         <x-heroicon-o-trash class="w-4 h-4" />
                                                     </button>
                                                 @endcan
@@ -567,7 +549,7 @@
                                                         class="text-gray-500 hover:text-brand-cyan text-xs font-bold font-secondary flex items-center gap-1">
                                                         <x-heroicon-o-eye class="w-4 h-4" /> Ver
                                                     </a>
-                                                    <button wire:click="deleteDocument({{ $doc->id }})" wire:confirm="¿Borrar del legajo?" class="text-gray-400 hover:text-brand-pink">
+                                                    <button wire:click="confirmAction('document', {{ $doc->id }}, '¿Seguro que deseas eliminar este archivo de su legajo histórico?')" class="text-gray-400 hover:text-brand-pink">
                                                         <x-heroicon-o-trash class="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -620,7 +602,7 @@
                                                     <button wire:click="editNote({{ $note->id }})" class="text-gray-500 hover:text-brand-cyan text-xs font-bold font-secondary flex items-center gap-1">
                                                         <x-heroicon-o-pencil class="w-4 h-4" /> Editar
                                                     </button>
-                                                    <button wire:click="deleteNote({{ $note->id }})" wire:confirm="¿Borrar esta nota del legajo?" class="text-gray-400 hover:text-brand-pink">
+                                                    <button wire:click="confirmAction('note', {{ $note->id }}, '¿Estás seguro de que querés borrar permanentemente esta nota?')" class="text-gray-400 hover:text-brand-pink">
                                                         <x-heroicon-o-trash class="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -647,6 +629,56 @@
     </div>
 
     <!-- ZONA DE MODALES FUERA DEL FLUJO DE LAS PESTAÑAS -->
+    
+    <!-- MODAL DE CONFIRMACIÓN (REEMPLAZA AL DE HTML NATIVO) -->
+    <div x-data="{ show: @entangle('showConfirmModal') }" x-show="show" class="fixed inset-0 z-[200] overflow-y-auto"
+        x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true"
+                @click="show = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="show" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6 border-t-4 border-brand-pink">
+                
+                <div class="sm:flex sm:items-start">
+                    <div class="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                        <x-heroicon-o-exclamation-triangle class="w-6 h-6 text-brand-pink" />
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg font-bold leading-6 text-gray-900 font-secondary uppercase tracking-wide" id="modal-title">
+                            Confirmar Acción
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500 font-secondary">{{ $confirmingMessage }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <button type="button" wire:click="executeAction"
+                        class="inline-flex justify-center w-full px-4 py-2 text-sm font-bold text-white transition-colors bg-brand-pink border border-transparent rounded-md shadow-sm hover:bg-red-600 focus:outline-none sm:ml-3 sm:w-auto font-secondary uppercase">
+                        Sí, Confirmar
+                    </button>
+                    <button type="button" wire:click="$set('showConfirmModal', false)"
+                        class="inline-flex justify-center w-full px-4 py-2 mt-3 text-sm font-bold text-gray-700 transition-colors bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto font-secondary uppercase">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     @if($showEditModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
