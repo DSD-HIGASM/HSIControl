@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\HierarchicalUnit;
 use App\Models\HsiRole;
 use App\Models\DocumentType;
+use App\Models\AgentNotes; // Importación corregida
 use App\Enums\RegistrationScope;
 use App\Enums\RegistrationType;
 use App\Enums\AgentGender;
@@ -44,7 +45,8 @@ class AgentDashboard extends Component
     public bool $showRoleModal = false;
     public bool $showUnitModal = false;
     public bool $showDocModal = false;
-    public bool $showHsiModal = false; // Nuevo modal para Credenciales HSI
+    public bool $showHsiModal = false; 
+    public bool $showNoteModal = false;
 
     // --- VARIABLES DE FORMULARIOS ---
     
@@ -78,6 +80,9 @@ class AgentDashboard extends Component
     // Credenciales HSI
     public $hsi_person_id, $hsi_user_id, $hsi_user;
 
+    // Notas
+    public $note_id, $note_title, $note_content;
+
     public function mount(Agent $agent)
     {
         $this->agent = $agent;
@@ -95,7 +100,8 @@ class AgentDashboard extends Component
             'hsiRoles.documentTypes',
             'residencies.currentUnit',
             'serviceBosses.service',
-            'hierarchicalUnits'
+            'hierarchicalUnits',
+            'notes' // [Inferencia] Asumo que el método de relación en tu modelo Agent se llama "notes()"
         ]);
     }
 
@@ -148,6 +154,55 @@ class AgentDashboard extends Component
         ]);
 
         $this->showEditModal = false;
+        $this->refreshAgentData();
+    }
+
+    // ==========================================
+    // LÓGICA: NOTAS DEL AGENTE
+    // ==========================================
+    public function createNote()
+    {
+        $this->resetValidation();
+        $this->reset(['note_id', 'note_title', 'note_content']);
+        $this->showNoteModal = true;
+    }
+
+    public function editNote($id)
+    {
+        $this->resetValidation();
+        $note = AgentNotes::find($id); // Uso del modelo corregido
+        
+        if ($note) {
+            $this->note_id = $note->id;
+            $this->note_title = $note->title;
+            $this->note_content = $note->content;
+            $this->showNoteModal = true;
+        }
+    }
+
+    public function saveNote()
+    {
+        $this->validate([
+            'note_title'   => 'required|string|max:255',
+            'note_content' => 'required|string',
+        ]);
+
+        AgentNotes::updateOrCreate( // Uso del modelo corregido
+            ['id' => $this->note_id],
+            [
+                'agent_id' => $this->agent->id, 
+                'title'    => $this->note_title,
+                'content'  => $this->note_content,
+            ]
+        );
+
+        $this->reset(['note_id', 'note_title', 'note_content', 'showNoteModal']);
+        $this->refreshAgentData();
+    }
+
+    public function deleteNote($id)
+    {
+        AgentNotes::find($id)?->delete(); // Uso del modelo corregido
         $this->refreshAgentData();
     }
 
@@ -389,6 +444,8 @@ class AgentDashboard extends Component
         $missingMandatoryTypes = $mandatoryTypes->whereNotIn('id', $uploadedTypeIds);
         $uploadedMandatoryDocs = $uploadedDocs->whereIn('type_id', $mandatoryTypes->pluck('id')->toArray());
         $historicalDocs = $uploadedDocs->whereNotIn('type_id', $mandatoryTypes->pluck('id')->toArray());
+        
+        $notes = $this->agent->notes ?? collect(); 
 
         return view('livewire.agents.agent-dashboard', [
             'occupations'       => Occupation::orderBy('name')->get(),
@@ -399,12 +456,13 @@ class AgentDashboard extends Component
             'documentTypes'     => DocumentType::orderBy('name')->get(),
             'registrationScopes'=> RegistrationScope::cases(),
             'registrationTypes' => RegistrationType::cases(),
-            'genders'           => AgentGender::cases(),
+            'genders'           => AgentGender::selectableCases(),
             'statuses'          => AgentStatus::cases(),
             
             'missingMandatoryTypes' => $missingMandatoryTypes,
             'uploadedMandatoryDocs' => $uploadedMandatoryDocs,
             'historicalDocs'        => $historicalDocs,
+            'notes'                 => $notes, 
         ]);
     }
 }

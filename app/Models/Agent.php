@@ -190,4 +190,12 @@ class Agent extends Model
             ->withPivot('responsible', 'created_by', 'updated_by')
             ->withTimestamps();
     }
+
+    /**
+     * Obtiene las notas asociadas al agente.
+     */
+    public function notes()
+    {
+        return $this->hasMany(AgentNotes::class);
+    }
 }
