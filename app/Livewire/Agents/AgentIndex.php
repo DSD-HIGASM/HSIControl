@@ -140,7 +140,7 @@ class AgentIndex extends Component
 
         // --- Orden por prioridad de Enum y luego por ID ---
         $query->orderByRaw("
-        CASE status 
+        CASE status
             WHEN '".AgentStatus::PENDIENTE->value."' THEN ".AgentStatus::PENDIENTE->priority()."
             WHEN '".AgentStatus::ACTIVO->value."' THEN ".AgentStatus::ACTIVO->priority()."
             WHEN '".AgentStatus::INACTIVO->value."' THEN ".AgentStatus::INACTIVO->priority().'
@@ -196,7 +196,7 @@ class AgentIndex extends Component
             'agents' => $query->paginate(15),
             'services' => Service::orderBy('name')->get(),
             'professions' => Occupation::orderBy('name')->get(),
-            'genders' => AgentGender::cases(),
+            'genders' => AgentGender::selectableCases(),
         ]);
     }
 }

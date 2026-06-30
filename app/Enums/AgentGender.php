@@ -14,4 +14,13 @@ enum AgentGender: string
         // Devuelve todos los casos excepto el PENDIENTE
         return array_filter(self::cases(), fn($case) => $case !== self::PENDIENTE);
     }
+
+    public function codedGender(): int
+    {
+        return match($this) {
+            self::MASCULINO => 2,
+            self::FEMENINO => 1,
+            self::X => 3
+        };
+    }
 }
