@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "HSI a HSIControl Sync",
+  "version": "1.0",
+  "description": "Exporta datos de pacientes y usuarios desde HSI a HSIControl.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://shc.ms.gba.gov.ar/*",
+    "https://hsi.sdhigasanmartin.qzz.io/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Configurar HSIControl Sync"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://shc.ms.gba.gov.ar/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

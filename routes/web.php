@@ -14,6 +14,7 @@ use App\Livewire\Agents\AgentDashboard;
 use App\Http\Controllers\Agents\AgentPrintController;
 use App\Http\Controllers\Agents\AgentController;
 use App\Livewire\HierarchicalUnits\Manager;
+use App\Http\Controllers\Agents\AgentImportController;
 
 Route::view('/', 'dashboard')
     ->middleware(['auth', 'verified'])
@@ -68,6 +69,10 @@ Route::get('/uujj', Manager::class)
 
 Route::get('/imprimir', AgentPrintController::class)->name('agents.print');
 Route::get('/padron/{agent}/ficha/imprimir', [AgentController::class, 'printFicha'])->name('agents.print_ficha');
+
+// APIs
+
+Route::get('/agentes/importar-rapido', [AgentImportController::class, 'importGet'])->name('agents.import_get');
 
 
 // Route::prefix('admin/configuracion')->middleware(['auth', 'role:Administrador'])->group(function () {

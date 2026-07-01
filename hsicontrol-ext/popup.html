@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            width: 320px; 
+            padding: 0; 
+            margin: 0; 
+            background-color: #f8fafc; 
+            color: #1e293b;
+        }
+        .header {
+            background-color: #0f172a;
+            color: white;
+            padding: 16px;
+            border-bottom: 4px solid #0ea5e9; /* El cian distintivo */
+        }
+        .header h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.025em; }
+        .header p { margin: 4px 0 0 0; font-size: 11px; color: #94a3b8; }
+        
+        .content { padding: 16px; }
+        
+        label { 
+            display: block; 
+            font-size: 11px; 
+            font-weight: 700; 
+            color: #64748b; 
+            text-transform: uppercase; 
+            tracking: 0.05em;
+            margin-bottom: 6px;
+        }
+        .form-group { margin-bottom: 14px; }
+        
+        select, input { 
+            width: 100%; 
+            padding: 9px 12px; 
+            box-sizing: border-box; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 13px;
+            background-color: white;
+            color: #334155;
+            transition: all 0.2s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 10px; 
+            background-color: #0ea5e9; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 13px;
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        button:hover { background-color: #0284c7; }
+        button:active { transform: scale(0.98); }
+        
+        #status { 
+            margin-top: 10px; 
+            font-size: 12px; 
+            font-weight: 600;
+            color: #16a34a; 
+            text-align: center;
+            display: none; 
+            padding: 6px;
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h3>HSIControl Sync</h3>
+        <p>División de Salud Digital — HIGA San Martín</p>
+    </div>
+    
+    <div class="content">
+        <div class="form-group">
+            <label for="syncMode">Modo de Trabajo</label>
+            <select id="syncMode">
+                <option value="GET">Modo Directo (Ventana Nueva)</option>
+                <option value="POST_INDIVIDUAL">Modo API (Bandeja Individual)</option>
+                <option value="POST_GLOBAL">Modo API (Bandeja División)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="apiToken">Token de Acceso (Sanctum)</label>
+            <input type="password" id="apiToken" placeholder="Pegá tu clave de API aquí...">
+        </div>
+
+        <button id="saveBtn">
+            <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Guardar Configuración
+        </button>
+        
+        <div id="status">✓ Cambios guardados correctamente</div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

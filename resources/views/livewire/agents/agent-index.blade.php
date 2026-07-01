@@ -8,6 +8,31 @@
                     HSI.</p>
             </div>
             <div class="flex items-center gap-3">
+                <a href="{{ asset('storage/downloads/hsicontrol-sync.zip') }}" download
+                    class="inline-flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-md transition-colors font-secondary shadow-sm">
+                    <x-heroicon-o-arrow-down-tray class="w-4 h-4 text-brand-cyan" />
+                    Descargar Extensión
+                </a>
+                <!-- NUEVO: Botón API Tokens (Redirección o Acción de Configuración) -->
+                <button wire:click="$set('showTokenModal', true)"
+                    class="inline-flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-md transition-colors font-secondary shadow-sm">
+                    <x-heroicon-o-key class="w-4 h-4 text-gray-500" />
+                    Claves de API
+                </button>
+
+                <!-- NUEVO: Botón Migraciones Pendientes con Contador Dinámico -->
+                <button wire:click="$set('showPendingModal', true)"
+                    class="inline-flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-md transition-colors font-secondary shadow-sm relative">
+                    <x-heroicon-o-arrow-path class="w-4 h-4 text-gray-500" />
+                    Pendientes HSI
+                    @if($pending_sync_count > 0)
+                        <span
+                            class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-pink text-[10px] font-bold text-white ring-2 ring-white">
+                            {{ $pending_sync_count }}
+                        </span>
+                    @endif
+                </button>
+
                 <button wire:click="$set('showExportModal', true)"
                     class="inline-flex items-center gap-1 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-md transition-colors font-secondary shadow-sm">
                     <x-heroicon-o-arrow-down-tray class="w-4 h-4 text-gray-500" />
@@ -366,7 +391,8 @@
                                     <div class="col-span-2">
                                         <x-searchable-select wire:model="new_service_id" label="Servicio Base (Planta)"
                                             placeholder="Escriba para buscar..." :options="$services->map(function ($s) {
-            return ['id' => $s->id, 'name' => $s->name]; })->values()->toArray()" required />
+                return ['id' => $s->id, 'name' => $s->name];
+            })->values()->toArray()" required />
                                     </div>
                                 </div>
 
@@ -449,6 +475,178 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    @endif
+    @if($showTokenModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
+                    wire:click="closeTokenModal" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+
+                    <div class="bg-white px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <x-heroicon-o-key class="w-6 h-6 text-brand-cyan" />
+                            Claves de API (Extensión)
+                        </h3>
+                        <p class="text-xs text-gray-500 font-secondary mt-1">
+                            Generá un token seguro para vincular tu extensión de HSI con tu cuenta de HSIControl.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-5 space-y-4">
+                        @if(!$generatedToken)
+                            <div class="text-center py-4">
+                                <p class="text-sm text-gray-600 font-secondary mb-4">
+                                    Al hacer clic abajo se generará una nueva clave de acceso personal.
+                                </p>
+                                <button type="button" wire:click="generateApiToken"
+                                    class="inline-flex items-center gap-1 px-4 py-2 bg-brand-cyan hover:bg-brand-cyan-dark text-white text-sm font-bold rounded-md transition-colors font-secondary shadow-sm">
+                                    <x-heroicon-o-plus-circle class="w-4 h-4" />
+                                    Generar Nueva Clave
+                                </button>
+                            </div>
+                        @else
+                            <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                <label
+                                    class="block text-[11px] font-bold text-amber-800 font-secondary uppercase tracking-wider mb-2">
+                                    Copiá tu clave de acceso:
+                                </label>
+
+                                <!-- Input con selección automática al hacer click para facilitar el copiado -->
+                                <input type="text" readonly value="{{ $generatedToken }}" onclick="this.select();"
+                                    class="block w-full rounded-md border-amber-300 bg-white shadow-sm focus:border-brand-cyan focus:ring-brand-cyan text-xs font-mono p-2.5 text-gray-800">
+
+                                <p class="text-[11px] text-amber-700 font-secondary mt-2 font-medium">
+                                    * Por seguridad, esta clave no se volverá a mostrar. Copiala ahora y pegala en el menú de
+                                    configuración de tu extensión.
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-end">
+                        <button type="button" wire:click="closeTokenModal"
+                            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-bold rounded-md transition-colors font-secondary">
+                            Cerrar
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    @endif
+    @if($showPendingModal)
+        
+
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
+                    wire:click="$set('showPendingModal', false)" aria-hidden="true"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border-t-4 border-brand-cyan">
+
+                    <div class="bg-white px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <x-heroicon-o-arrow-path class="w-6 h-6 text-brand-cyan" />
+                            Bandeja de Importaciones Pendientes (HSI)
+                        </h3>
+                        <p class="text-xs text-gray-500 font-secondary mt-1">
+                            Listado de agentes enviados desde la extensión listos para ser incorporados al padrón
+                            definitivo.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-50 max-h-[60vh] overflow-y-auto">
+                        @if($pendingImports->isEmpty())
+                            <div class="text-center py-16 text-gray-500 font-secondary text-sm">
+                                <x-heroicon-o-check-circle class="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                                No hay registros pendientes de procesamiento en este momento.
+                            </div>
+                        @else
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider font-secondary">
+                                            Agente Enviado</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider font-secondary">
+                                            Usuario HSI</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider font-secondary">
+                                            Roles Detectados</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-wider font-secondary">
+                                            Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    @foreach($pendingImports as $sync)
+                                        @php
+                                            $comp = $sync->completed_data;
+                                            $usr = $sync->user_data;
+                                            $rolesList = $sync->roles_data ?? [];
+                                        @endphp
+                                        <tr class="hover:bg-gray-50/60 transition-colors">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-bold text-gray-900 uppercase">
+                                                    {{ $comp['lastName'] ?? 'SIN APELLIDO' }},
+                                                    {{ $comp['firstName'] ?? 'SIN NOMBRE' }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 font-secondary mt-0.5">
+                                                    DNI: {{ number_format($sync->dni, 0, ',', '.') }}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-mono text-gray-700 font-bold">
+                                                    {{ $usr['username'] ?? '—' }}
+                                                </div>
+                                                <div class="text-[10px] text-gray-400 font-secondary">
+                                                    ID: {{ $usr['id'] ?? '—' }}
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex flex-wrap gap-1 max-w-xs">
+                                                    @forelse($rolesList as $r)
+                                                        <span
+                                                            class="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600 border border-gray-200 font-secondary uppercase">
+                                                            {{ $r['roleDescription'] }}
+                                                        </span>
+                                                    @empty
+                                                        <span class="text-xs italic text-gray-400 font-secondary">Sin roles</span>
+                                                    @endforelse
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button type="button" wire:click="processImport('{{ $sync->id }}')"
+                                                    wire:loading.attr="disabled"
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-cyan hover:bg-brand-cyan-dark text-white text-xs font-bold rounded-md transition-colors font-secondary shadow-sm disabled:opacity-50">
+                                                    <x-heroicon-s-check class="w-3.5 h-3.5" />
+                                                    Procesar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        @endif
+                    </div>
+
+                    <div class="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-end">
+                        <button type="button" wire:click="$set('showPendingModal', false)"
+                            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-bold rounded-md transition-colors font-secondary">
+                            Cerrar Bandeja
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
