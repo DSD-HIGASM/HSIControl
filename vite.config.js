@@ -9,8 +9,12 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        watch: {
+            ignored: ['**/hsicontrol-ext/**']
+        }
+    },
     build: {
-        // Le decimos a Vite: "No te asustes a menos que un archivo supere los 1000 KB"
         chunkSizeWarningLimit: 1000,
         rollupOptions: {
             output: {
