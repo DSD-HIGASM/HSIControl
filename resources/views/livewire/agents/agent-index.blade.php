@@ -129,7 +129,7 @@
                                         <div>
                                             <div
                                                 class="text-sm font-bold text-gray-900 uppercase group-hover:text-brand-cyan transition-colors">
-                                                {{ $agent->last_name }}, {{ $agent->first_name }}
+                                                {{ $agent->last_name }} {{ $agent->second_last_name ?? '' }}, {{ $agent->first_name }} {{ $agent->second_first_name ?? '' }}
                                             </div>
                                             <div class="text-xs text-gray-500 font-secondary mt-0.5">
                                                 DNI: {{ number_format($agent->dni, 0, ',', '.') }}
@@ -282,16 +282,19 @@
 
                         <div class="bg-gray-50 px-6 py-5 space-y-4">
                             <div>
-                                <label
-                                    class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Estado
-                                    a Exportar</label>
-                                <select name="status"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan focus:ring-brand-cyan sm:text-sm font-secondary">
-                                    <option value="">Todos</option>
-                                    <option value="Activos">Solo Activos</option>
-                                    <option value="Inactivos">Solo Inactivos</option>
-                                </select>
-                            </div>
+    <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">
+        Estado a Exportar
+    </label>
+    <select name="status"
+        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan focus:ring-brand-cyan sm:text-sm font-secondary">
+        <option value="">Todos</option>
+        
+        @foreach(\App\Enums\AgentStatus::cases() as $status)
+            <option value="{{ $status->value }}">
+                {{ $status->label() }} </option>
+        @endforeach
+    </select>
+</div>
 
                             <div>
                                 <label

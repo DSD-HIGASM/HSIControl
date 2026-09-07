@@ -166,7 +166,7 @@
                 });
             }
         }" x-init="initTabsSlider()">
-        
+
             <div class="relative w-full overflow-hidden transition-[height] duration-500 ease-in-out" x-ref="tabContainer" x-cloak>
                 <div class="flex transition-transform duration-500 ease-in-out items-start w-full" :style="`transform: translateX(-${activeIndex * 100}%)`">
 
@@ -274,7 +274,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="space-y-6">
                                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden {{ $agent->residencies->isEmpty() ? 'border-dashed' : '' }}">
                                     <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
@@ -500,7 +500,7 @@
                                                 <div>
                                                     <p class="text-sm font-bold text-gray-900 uppercase">
                                                         {{ $doc->type->name ?? 'Documento' }}
-                                                    </p> 
+                                                    </p>
                                                     @if($doc->other_type)
                                                         <p class="text-[11px] text-gray-500 font-secondary mt-0.5">Tipo declarado: <span class="font-bold text-gray-700">{{ $doc->other_type }}</span></p>
                                                     @endif
@@ -629,7 +629,7 @@
     </div>
 
     <!-- ZONA DE MODALES FUERA DEL FLUJO DE LAS PESTAÑAS -->
-    
+
     <!-- MODAL DE CONFIRMACIÓN (REEMPLAZA AL DE HTML NATIVO) -->
     <div x-data="{ show: @entangle('showConfirmModal') }" x-show="show" class="fixed inset-0 z-[200] overflow-y-auto"
         x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -649,7 +649,7 @@
                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6 border-t-4 border-brand-pink">
-                
+
                 <div class="sm:flex sm:items-start">
                     <div class="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
                         <x-heroicon-o-exclamation-triangle class="w-6 h-6 text-brand-pink" />
@@ -663,7 +663,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                     <button type="button" wire:click="executeAction"
                         class="inline-flex justify-center w-full px-4 py-2 text-sm font-bold text-white transition-colors bg-brand-pink border border-transparent rounded-md shadow-sm hover:bg-red-600 focus:outline-none sm:ml-3 sm:w-auto font-secondary uppercase">
@@ -1037,46 +1037,76 @@
     @endif
 
     @if($showDocModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showDocModal', false)"></div><span
-                    class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
-                    <form wire:submit="saveDocument">
-                        <div class="px-6 py-5 border-b border-gray-200">
-                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2"><x-heroicon-o-cloud-arrow-up class="w-5 h-5 text-brand-cyan" /> Subir Documento</h3>
+    <div class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showDocModal', false)"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">​</span>
+
+            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                <!-- Usamos prevent para evitar recargas nativas accidentales del navegador -->
+                <form wire:submit.prevent="saveDocument">
+                    <div class="px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <x-heroicon-o-cloud-arrow-up class="w-5 h-5 text-brand-cyan" /> Subir Documento
+                        </h3>
+                    </div>
+
+                    <div class="p-6 space-y-4 bg-gray-50">
+                        <!-- SOLUCIÓN 1: Envolvemos el componente dinámico en un div con wire:ignore para que Livewire no lo rompa al re-renderizar -->
+                        <div wire:ignore>
+                            <x-searchable-select wire:model="doc_type_id" label="Tipo de Documento *"
+                                placeholder="Buscar documento..." defaultText="Seleccione..."
+                                :options="$documentTypes->map(fn($type) => ['id' => $type->id, 'name' => $type->name])->values()->toArray()" />
                         </div>
-                        <div class="p-6 space-y-4 bg-gray-50">
-                            <div>
-                                <x-searchable-select wire:model="doc_type_id" label="Tipo de Documento *"
-                                    placeholder="Buscar documento..." defaultText="Seleccione..."
-                                    :options="$documentTypes->map(fn($type) => ['id' => $type->id, 'name' => $type->name])->values()->toArray()" />
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Descripción Extra (Opcional)</label>
-                                <input type="text" wire:model="doc_other_type"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Archivo (PDF/IMG, Max 5MB) *</label>
-                                <input type="file" wire:model="doc_file"
-                                    class="mt-1 block w-full text-sm text-gray-500 font-secondary file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-cyan/10 file:text-brand-cyan-dark hover:file:bg-brand-cyan/20"
-                                    required>
-                                <div wire:loading wire:target="doc_file" class="text-xs text-brand-cyan font-bold mt-2">Cargando archivo...</div>
-                                @error('doc_file') <span class="text-xs text-brand-pink font-bold mt-1">{{ $message }}</span> @enderror
-                            </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Descripción Extra (Opcional)</label>
+                            <input type="text" wire:model="doc_other_type"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                         </div>
-                        <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
-                            <button type="button" wire:click="$set('showDocModal', false)"
-                                class="px-4 py-2 text-sm font-bold bg-gray-100 rounded-md">Cancelar</button>
-                            <button type="submit" wire:loading.attr="disabled"
-                                class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md disabled:opacity-50">Subir y Guardar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+
+                        <div>
+    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Archivo (PDF/IMG, Max 5MB) *</label>
+
+    <!-- 1. QUITAR el atributo 'required' nativo -->
+    <input type="file" wire:model="doc_file" id="doc_file_upload" wire:key="upload-file-input"
+        class="mt-1 block w-full text-sm text-gray-500 font-secondary file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-cyan/10 file:text-brand-cyan-dark hover:file:bg-brand-cyan/20">
+
+    <!-- 2. Spinner de carga -->
+    <div wire:loading wire:target="doc_file" class="text-xs text-brand-cyan font-bold mt-2 animate-pulse">
+        Cargando archivo al servidor temporal...
+    </div>
+
+    <!-- 3. NUEVO: Feedback visual cuando el archivo ya se cargó a la variable -->
+    @if($doc_file && !$errors->has('doc_file'))
+        <div class="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Archivo listo para guardar.
         </div>
     @endif
+
+    <!-- 4. Errores de validación de backend -->
+    @error('doc_file')
+        <span class="text-xs text-brand-pink font-bold mt-1 block">{{ $message }}</span>
+    @enderror
+</div>
+                    </div>
+
+                    <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
+                        <button type="button" wire:click="$set('showDocModal', false)"
+                            class="px-4 py-2 text-sm font-bold bg-gray-100 rounded-md">Cancelar</button>
+                        <!-- Deshabilitamos el botón durante la transferencia del archivo para evitar peticiones vacías -->
+                        <button type="submit" wire:loading.attr="disabled" wire:target="doc_file"
+                            class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md disabled:opacity-50">
+                            Subir y Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
+
 
     <!-- MODAL DE NOTAS -->
     <div x-data="{ show: @entangle('showNoteModal') }" x-show="show" class="fixed inset-0 z-[100] overflow-y-auto"

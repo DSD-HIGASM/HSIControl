@@ -11,12 +11,12 @@ class HsiSyncController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validamos las estructuras requeridas
+        // 1. Validamos las estructuras (sin necesidad de pedir person_id por fuera)
         $validator = Validator::make($request->all(), [
             'completed' => 'required|array',
-            'personal' => 'required|array',
-            'user' => 'nullable|array',
-            'roles' => 'nullable|array',
+            'personal'  => 'required|array',
+            'user'      => 'nullable|array',
+            'roles'     => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -37,22 +37,26 @@ class HsiSyncController extends Controller
             ], 422);
         }
 
-        // 3. Extraemos el user_id del bloque 'user' enviado por la extensión
-        $userId = $request->input('user.id') ?? null;
+        // --- ACÁ ESTÁ LA SOLUCIÓN ---
+        $completedData = $request->input('completed');
+        
+        // Como confirmaste que el ID correcto viene en la raíz (completedData['id']),
+        // lo copiamos a la fuerza adentro de 'person' para que tu importador no falle.
+        $completedData['person']['id'] = $completedData['id'];
 
-        // 4. Insertamos o actualizamos pasando explícitamente el campo que SQLite te pide
+        // 3. Insertamos o actualizamos pasando el array ya parcheado
         $sync = HsiPatientSync::updateOrCreate(
             [
                 'dni' => $dni,
                 'processed_at' => null,
             ],
             [
-                'user_id'        => auth()->id(), // <-- Asignamos la columna nativa que fallaba
+                'user_id'        => auth()->id(), 
                 'is_global'      => $request->input('mode') === 'POST_GLOBAL',
-                'completed_data' => $request->input('completed'),
-                'personal_info' => $request->input('personal'),
-                'user_data' => $request->input('user') ?? [],
-                'roles_data' => $request->input('roles') ?? [],
+                'completed_data' => $completedData, // <-- Guardamos el JSON corregido
+                'personal_info'  => $request->input('personal'),
+                'user_data'      => $request->input('user') ?? [],
+                'roles_data'     => $request->input('roles') ?? [],
             ]
         );
 

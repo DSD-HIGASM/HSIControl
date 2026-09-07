@@ -55,7 +55,7 @@
                     </a>
                 @endcanany
 
-                @can('configurar.servicios')
+                @canany(['ver.unidades_jerarquicas', 'gestionar.unidades_jerarquicas'])
                     <a href="{{ route('hierarchical-units.manager') }}"
                         class="block bg-white overflow-hidden shadow-sm sm:rounded-xl border-t-4 border-brand-cyan hover:shadow-md hover:-translate-y-1 transition-all duration-200 group">
                         <div class="p-6">
@@ -71,7 +71,7 @@
                             <p class="font-secondary text-sm text-gray-500">Gestión del tablero funcional, dependencias y mapa estructural del hospital.</p>
                         </div>
                     </a>
-                @endcan
+                @endcanany
 
                 @can('ver.logs')
                     <a href="{{ route('system.activity-logs') }}"

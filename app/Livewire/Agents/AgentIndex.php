@@ -178,7 +178,7 @@ class AgentIndex extends Component
                 'last_name' => $completed['lastName'] ?? $existingAgent->last_name,
                 'email' => $personal['email'] ?? $existingAgent->email,
                 'phone' => isset($personal['phonePrefix']) ? ($personal['phonePrefix'].$personal['phoneNumber']) : $existingAgent->phone,
-                'person_id' => $completed['person']['id'] ?? $existingAgent->person_id,
+                'person_id' => $completed['id'] ?? $existingAgent->person_id,
                 'user_id' => $user['id'] ?? $existingAgent->user_id,
                 'user' => $user['username'] ?? $existingAgent->user,
                 'status' => AgentStatus::ACTIVO,
@@ -204,7 +204,7 @@ class AgentIndex extends Component
                 'gender' => $gender,
                 'email' => $personal['email'] ?? null,
                 'phone' => ($personal['phonePrefix'] ?? '').($personal['phoneNumber'] ?? ''),
-                'person_id' => $completed['person']['id'] ?? null,
+                'person_id' => $completed['id'] ?? null,
                 'user_id' => $user['id'] ?? null,
                 'user' => $user['username'] ?? null,
                 'status' => AgentStatus::PENDIENTE,
@@ -305,15 +305,36 @@ class AgentIndex extends Component
         };
 
         $query->where(function ($q) use ($terms, $normalizeSql) {
-            foreach ($terms as $term) {
-                $q->where(function ($subQ) use ($term, $normalizeSql) {
-                    $subQ->where('dni', 'like', "%{$term}%")
-                        ->orWhereRaw($normalizeSql('last_name').' LIKE ?', ["%{$term}%"])
-                        ->orWhereRaw($normalizeSql('first_name').' LIKE ?', ["%{$term}%"])
-                        ->orWhere('phone', 'like', "%{$term}%");
-                });
+    foreach ($terms as $term) {
+        // 1. Creamos una versión limpia del término dejando SOLO números
+        $termNumerico = preg_replace('/[^0-9]/', '', $term);
+
+        $q->where(function ($subQ) use ($term, $termNumerico, $normalizeSql) {
+            // 2. Si el término limpio no está vacío, buscamos por DNI numérico
+            if (!empty($termNumerico)) {
+                $subQ->where('dni', 'like', "%{$termNumerico}%");
+            } else {
+                // Si el usuario solo escribió letras o puntos sin números, 
+                // forzamos un estado falso para que el "orWhere" de los nombres funcione correctamente
+                $subQ->whereRaw('1 = 0'); 
+            }
+
+            // 3. El resto de los campos de texto siguen buscando con el término original
+            $subQ->orWhereRaw($normalizeSql('last_name').' LIKE ?', ["%{$term}%"])
+                ->orWhereRaw($normalizeSql('second_last_name').' LIKE ?', ["%{$term}%"])
+                ->orWhereRaw($normalizeSql('first_name').' LIKE ?', ["%{$term}%"])
+                ->orWhereRaw($normalizeSql('second_first_name').' LIKE ?', ["%{$term}%"]);
+
+            // 4. Opcional: También puedes usar el término numérico para el teléfono si lo prefieres
+            if (!empty($termNumerico)) {
+                $subQ->orWhere('phone', 'like', "%{$termNumerico}%");
+            } else {
+                $subQ->orWhere('phone', 'like', "%{$term}%");
             }
         });
+    }
+});
+
     }
 
     return view('livewire.agents.agent-index', [

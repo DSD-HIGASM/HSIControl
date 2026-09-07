@@ -1,6 +1,6 @@
 // Configuración base
 const HSI_CONTROL_URL = 'https://hsi.sdhigasanmartin.qzz.io';
-const INSTITUTION_ID = 484; 
+const INSTITUTION_ID = 484;
 
 // Función principal que orquesta la extracción
 async function exportPatientToHSIControl(patientId) {
@@ -8,7 +8,7 @@ async function exportPatientToHSIControl(patientId) {
         // 1. Obtener completedata
         const completedRes = await fetch(`/api/patient/${patientId}/completedata`);
         const completedData = await completedRes.json();
-        
+
         const personId = completedData.person?.id;
         if (!personId) throw new Error("No se encontró personId en HSI");
 
@@ -29,15 +29,15 @@ async function exportPatientToHSIControl(patientId) {
             try {
                 console.log("Consultando roles para userID:", userData.id);
                 const rolesRes = await fetch(`/api/user-role/institution/${INSTITUTION_ID}/user/${userData.id}`);
-                
+
                 if (rolesRes.ok) {
                     rolesData = await rolesRes.json();
                     console.log("Roles obtenidos:", rolesData);
                 } else {
                     console.error("Error en API de roles. Status:", rolesRes.status);
                 }
-            } catch (e) { 
-                console.error("Error crítico multimedia en roles:", e); 
+            } catch (e) {
+                console.error("Error crítico multimedia en roles:", e);
             }
         } else {
             console.warn("No se pudo consultar roles porque no hay userData.id");
@@ -46,7 +46,7 @@ async function exportPatientToHSIControl(patientId) {
         // Ejecutar envío según configuración
         chrome.storage.sync.get(['syncMode', 'apiToken'], (config) => {
             const mode = config.syncMode || 'GET';
-            
+
             if (mode === 'GET') {
                 executeGetFlow(completedData, personalData, userData, rolesData);
             } else {
@@ -73,9 +73,9 @@ function executeGetFlow(completed, personal, user, roles) {
         last_name: lastName,
         gender: gender.toLowerCase(),
         completed: btoa(unescape(encodeURIComponent(JSON.stringify(completed)))),
-        personal:  btoa(unescape(encodeURIComponent(JSON.stringify(personal)))),
-        user:      btoa(unescape(encodeURIComponent(JSON.stringify(user)))),
-        roles:     btoa(unescape(encodeURIComponent(JSON.stringify(roles))))
+        personal: btoa(unescape(encodeURIComponent(JSON.stringify(personal)))),
+        user: btoa(unescape(encodeURIComponent(JSON.stringify(user)))),
+        roles: btoa(unescape(encodeURIComponent(JSON.stringify(roles))))
     });
 
     const url = `${HSI_CONTROL_URL}/agentes/importar-rapido?${params.toString()}`;
@@ -130,15 +130,15 @@ function showToast(message, type = 'success') {
 
     const toast = document.createElement('div');
     toast.id = 'hsi-sync-toast';
-    
+
     const bgColor = type === 'success' ? '#0ea5e9' : '#db2777';
-    
+
     toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            ${type === 'success' 
-                ? '<svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
-                : '<svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
-            }
+            ${type === 'success'
+            ? '<svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+            : '<svg style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        }
             <span style="font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;">${message}</span>
         </div>
     `;
@@ -190,14 +190,14 @@ function injectButton() {
 
     const btn = document.createElement('button');
     btn.id = 'btn-hsi-sync';
-    
+
     btn.innerHTML = `
         <svg style="width:14px;height:14px;stroke-width:2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path>
         </svg>
         Sincronizar Padrón
     `;
-    
+
     const isFloatingTop = topHeader === document.body;
     btn.style.cssText = `
         display: inline-flex;
@@ -216,12 +216,12 @@ function injectButton() {
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         ${isFloatingTop ? 'position: absolute; top: 75px; right: 20px; z-index: 9999;' : 'margin-left: 12px;'}
     `;
-    
+
     btn.addEventListener('mouseenter', () => btn.style.backgroundColor = '#0284c7');
     btn.addEventListener('mouseleave', () => btn.style.backgroundColor = '#0ea5e9');
 
     btn.addEventListener('click', () => {
-        const match = window.location.href.match(/profile\/(\d+)/); 
+        const match = window.location.href.match(/profile\/(\d+)/);
         if (match && match[1]) {
             exportPatientToHSIControl(match[1]);
         } else {
@@ -237,7 +237,7 @@ function injectButton() {
 }
 
 // --- OBSERVADOR DE NAVEGACIÓN UNIFICADO ---
-let lastUrl = location.href; 
+let lastUrl = location.href;
 new MutationObserver(() => {
     const url = location.href;
     if (url !== lastUrl) {
@@ -245,7 +245,7 @@ new MutationObserver(() => {
         // Ejecutamos siempre para ponerlo o sacarlo dinámicamente
         setTimeout(injectButton, 600);
     }
-}).observe(document, {subtree: true, childList: true});
+}).observe(document, { subtree: true, childList: true });
 
 // Ejecución al tiro en la carga inicial
 setTimeout(injectButton, 600);

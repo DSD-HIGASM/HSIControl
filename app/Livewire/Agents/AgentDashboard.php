@@ -15,7 +15,7 @@ use App\Models\Service;
 use App\Models\HierarchicalUnit;
 use App\Models\HsiRole;
 use App\Models\DocumentType;
-use App\Models\AgentNotes; 
+use App\Models\AgentNotes;
 use App\Enums\RegistrationScope;
 use App\Enums\RegistrationType;
 use App\Enums\AgentGender;
@@ -45,7 +45,7 @@ class AgentDashboard extends Component
     public bool $showRoleModal = false;
     public bool $showUnitModal = false;
     public bool $showDocModal = false;
-    public bool $showHsiModal = false; 
+    public bool $showHsiModal = false;
     public bool $showNoteModal = false;
     public bool $showConfirmModal = false; // NUEVO: Modal genérico de confirmación
 
@@ -55,33 +55,33 @@ class AgentDashboard extends Component
     public string $confirmingMessage = '';
 
     // --- VARIABLES DE FORMULARIOS ---
-    
+
     // Edición de Agente
     public $edit_first_name, $edit_second_first_name, $edit_last_name, $edit_second_last_name;
     public $edit_dni, $edit_gender, $edit_phone, $edit_email, $edit_status, $edit_service_id;
 
     // Profesión
     public $prof_profession_id, $prof_specialty_id;
-    
+
     // Matrícula
     public $reg_assignment_id, $reg_number, $reg_scope, $reg_type;
-    
+
     // Residencia
     public $res_program_name, $res_current_year, $res_current_unit_id, $res_end_date;
-    
+
     // Jefatura
     public $boss_service_id;
-    
+
     // Rol HSI
     public $role_id;
-    
+
     // Unidad HSI
     public $unit_id;
     public bool $unit_responsible = false;
-    
+
     // Documento
     public $doc_type_id, $doc_other_type;
-    public $doc_file; 
+    public $doc_file;
 
     // Credenciales HSI
     public $hsi_person_id, $hsi_user_id, $hsi_user;
@@ -156,7 +156,7 @@ class AgentDashboard extends Component
         $this->edit_email = $this->agent->email;
         $this->edit_status = is_object($this->agent->status) ? $this->agent->status->value : $this->agent->status;
         $this->edit_service_id = $this->agent->service_id;
-        
+
         $this->showEditModal = true;
     }
 
@@ -205,8 +205,8 @@ class AgentDashboard extends Component
     public function editNote($id)
     {
         $this->resetValidation();
-        $note = AgentNotes::find($id); 
-        
+        $note = AgentNotes::find($id);
+
         if ($note) {
             $this->note_id = $note->id;
             $this->note_title = $note->title;
@@ -222,10 +222,10 @@ class AgentDashboard extends Component
             'note_content' => 'required|string',
         ]);
 
-        AgentNotes::updateOrCreate( 
+        AgentNotes::updateOrCreate(
             ['id' => $this->note_id],
             [
-                'agent_id' => $this->agent->id, 
+                'agent_id' => $this->agent->id,
                 'title'    => $this->note_title,
                 'content'  => $this->note_content,
             ]
@@ -479,8 +479,8 @@ class AgentDashboard extends Component
         $missingMandatoryTypes = $mandatoryTypes->whereNotIn('id', $uploadedTypeIds);
         $uploadedMandatoryDocs = $uploadedDocs->whereIn('type_id', $mandatoryTypes->pluck('id')->toArray());
         $historicalDocs = $uploadedDocs->whereNotIn('type_id', $mandatoryTypes->pluck('id')->toArray());
-        
-        $notes = $this->agent->notes ?? collect(); 
+
+        $notes = $this->agent->notes ?? collect();
 
         return view('livewire.agents.agent-dashboard', [
             'occupations'       => Occupation::orderBy('name')->get(),
@@ -493,11 +493,11 @@ class AgentDashboard extends Component
             'registrationTypes' => RegistrationType::cases(),
             'genders'           => AgentGender::selectableCases(),
             'statuses'          => AgentStatus::cases(),
-            
+
             'missingMandatoryTypes' => $missingMandatoryTypes,
             'uploadedMandatoryDocs' => $uploadedMandatoryDocs,
             'historicalDocs'        => $historicalDocs,
-            'notes'                 => $notes, 
+            'notes'                 => $notes,
         ]);
     }
 }

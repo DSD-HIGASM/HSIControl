@@ -19,14 +19,13 @@ class AgentPrintController extends Controller
             'hsiRoles.documentTypes'
         ])->latest();
 
-        // Aplicamos los mismos filtros que vienen por GET (query string)
         if ($request->filled('status')) {
-            if ($request->status === 'Activos') {
-                $query->where('status', AgentStatus::ACTIVO);
-            } elseif ($request->status === 'Inactivos') {
-                $query->where('status', AgentStatus::INACTIVO);
-            }
-        }
+    $status = \App\Enums\AgentStatus::tryFrom($request->status);
+    
+    if ($status) {
+        $query->where('status', $status);
+    }
+}
 
         if ($request->filled('service_id')) {
             $query->where('service_id', $request->service_id);
