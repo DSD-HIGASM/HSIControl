@@ -49,7 +49,7 @@ class AgentImportController extends Controller
             'gender' => $gender,
             'email' => $personal['email'] ?? null,
             'phone' => ($personal['phonePrefix'] ?? '').($personal['phoneNumber'] ?? ''),
-            'person_id' => $completed['person']['id'] ?? null,
+            'person_id' => $completed['id'] ?? null,
             'user_id' => $user['id'] ?? null,
             'user' => $user['username'] ?? null,
             'status' => AgentStatus::PENDIENTE,
