@@ -62,6 +62,14 @@ new class extends Component {
                             Unidades Jerárquicas
                         </x-nav-link>
                     @endcanany
+
+                    @can('gestionar.miky')
+                        <x-nav-link :href="route('miky.index')"
+                            :active="request()->routeIs('miky.index')"
+                            class="font-secondary text-brand-gray-custom focus:text-brand-cyan-dark hover:text-brand-cyan transition-colors">
+                            Miky7
+                        </x-nav-link>
+                    @endcan
                 </div>
             </div>
 

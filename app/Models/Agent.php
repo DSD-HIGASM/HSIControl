@@ -198,4 +198,30 @@ class Agent extends Model
     {
         return $this->hasMany(AgentNotes::class);
     }
+
+    /**
+     * Comprueba si el agente posee el rol habilitador de agendas.
+     */
+    public function isAdministrativeOfHierarchicalUnits(): bool
+    {
+        return $this->hsiRoles->contains(function ($role) {
+            return mb_strtoupper(trim($role->name)) === 'ADMINISTRATIVO DE UNIDADES JERÁRQUICAS';
+        });
+    }
+
+    /**
+     * Unidades jerárquicas a las que tiene acceso operativo/agendas (rol administrativo).
+     */
+    public function accessibleHierarchicalUnits()
+    {
+        return $this->belongsToMany(
+            HierarchicalUnit::class,
+            'agent_hierarchical_unit_access',
+            'agent_id',
+            'hierarchical_unit_id'
+        )
+        ->withPivot('id', 'created_by', 'updated_by')
+        ->withTimestamps()
+        ->whereNull('agent_hierarchical_unit_access.deleted_at');
+    }
 }

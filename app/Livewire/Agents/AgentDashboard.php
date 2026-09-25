@@ -53,6 +53,8 @@ class AgentDashboard extends Component
     public ?string $confirmingAction = null;
     public ?int $confirmingId = null;
     public string $confirmingMessage = '';
+    public bool $showAccessModal = false;
+    public array $selected_access_units = [];
 
     // --- VARIABLES DE FORMULARIOS ---
 
@@ -107,6 +109,7 @@ class AgentDashboard extends Component
             'residencies.currentUnit',
             'serviceBosses.service',
             'hierarchicalUnits',
+            'accessibleHierarchicalUnits',
             'notes'
         ]);
     }
@@ -308,6 +311,43 @@ class AgentDashboard extends Component
         $this->showRegModal = true;
     }
 
+    public function openAccessModal()
+    {
+        $this->selected_access_units = $this->agent->accessibleHierarchicalUnits
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $this->showAccessModal = true;
+    }
+
+    public function saveAccessUnits()
+    {
+        $userId = auth()->id();
+
+        // Estructura asociativa para poblar auditoría en la tabla pivot
+        $syncData = [];
+        foreach ($this->selected_access_units as $unitId) {
+            $syncData[$unitId] = [
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ];
+        }
+
+        $this->agent->accessibleHierarchicalUnits()->sync($syncData);
+
+        $this->showAccessModal = false;
+        $this->refreshAgentData();
+
+        session()->flash('status', 'Accesos a agendas y unidades jerárquicas actualizados.');
+    }
+
+    public function revokeAccessUnit($unitId)
+    {
+        $this->agent->accessibleHierarchicalUnits()->detach($unitId);
+        $this->refreshAgentData();
+    }
+
     public function saveRegistration()
     {
         $this->validate([
@@ -436,7 +476,7 @@ class AgentDashboard extends Component
     {
         $this->validate([
             'doc_type_id' => 'required|exists:document_types,id',
-            'doc_file'    => 'required|file|max:5120',
+            'doc_file'    => 'required|file|max:100000',
         ]);
 
         $path = $this->doc_file->store('agent_documents', 'public');

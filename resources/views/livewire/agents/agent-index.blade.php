@@ -48,37 +48,122 @@
             </div>
         </div>
 
-        <div
-            class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-wrap lg:flex-nowrap gap-4 items-end">
+        <!-- PANEL DE FILTROS AVANZADOS (2 FILAS BALANCEADAS) -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6 space-y-6">
 
-            <div class="w-full lg:w-72">
-                <label for="search"
-                    class="block text-[11px] font-bold text-gray-500 font-secondary uppercase tracking-wider mb-1">
-                    Buscar Agente
-                </label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <x-heroicon-o-magnifying-glass class="h-4 w-4 text-gray-400" />
+            <!-- FILA 1 (3 COLUMNAS) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <!-- 1. Búsqueda por Texto -->
+                <div>
+                    <label for="search" class="block text-xs font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1.5 truncate">
+                        Buscar Agente
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <x-heroicon-o-magnifying-glass class="h-4 w-4 text-gray-400" />
+                        </div>
+                        <input wire:model.live.debounce.300ms="search" id="search" type="text"
+                            placeholder="DNI, apellido, nombre..."
+                            class="pl-10 block w-full h-[42px] rounded-lg border-gray-300 shadow-sm focus:border-brand-cyan focus:ring-brand-cyan sm:text-xs font-secondary transition-colors">
                     </div>
-                    <input wire:model.live.debounce.300ms="search" id="search" type="text"
-                        placeholder="DNI, Apellidos, Nombres..."
-                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan focus:ring-brand-cyan sm:text-sm font-secondary transition-colors">
                 </div>
+
+                <!-- 2. Roles HSI -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-gray-700 font-secondary uppercase tracking-wider truncate">Roles HSI</label>
+                        <button type="button" wire:click="toggleOperator('roles')"
+                            class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border transition-colors {{ $roles_operator === 'in' ? 'bg-cyan-50 text-brand-cyan-dark border-cyan-200' : 'bg-rose-50 text-brand-pink border-rose-200' }}"
+                            title="Alternar entre que tenga el rol o que no lo tenga">
+                            {{ $roles_operator === 'in' ? 'TIENE' : 'NO TIENE' }}
+                        </button>
+                    </div>
+                    <x-multi-searchable-select wire:model.live="role_ids" label="" placeholder="Buscar roles..."
+                        defaultText="Todos los roles" :options="$hsiRoles->map(fn($r) => ['id' => $r->id, 'name' => $r->name])->values()->toArray()" />
+                </div>
+
+                <!-- 3. Servicio Base -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-gray-700 font-secondary uppercase tracking-wider truncate">Servicio Base</label>
+                        <button type="button" wire:click="toggleOperator('services')"
+                            class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border transition-colors {{ $services_operator === 'in' ? 'bg-cyan-50 text-brand-cyan-dark border-cyan-200' : 'bg-rose-50 text-brand-pink border-rose-200' }}"
+                            title="Alternar entre que pertenezca al servicio o que no">
+                            {{ $services_operator === 'in' ? 'ES' : 'NO ES' }}
+                        </button>
+                    </div>
+                    <x-multi-searchable-select wire:model.live="service_ids" label="" placeholder="Buscar servicios..."
+                        defaultText="Todos los servicios" :options="$services->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->values()->toArray()" />
+                </div>
+
             </div>
 
-            <div class="w-full flex-1 min-w-[200px]">
-                <x-searchable-select wire:model.live="service_id" label="Servicio Base" placeholder="Buscar servicio..."
-                    defaultText="Todos los servicios" :options="$services->map(fn($service) => ['id' => $service->id, 'name' => $service->name])->values()->toArray()" />
+            <!-- FILA 2 (3 COLUMNAS) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-1 border-t border-gray-100">
+
+                <!-- 4. Profesión -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-gray-700 font-secondary uppercase tracking-wider truncate">Profesión</label>
+                        <button type="button" wire:click="toggleOperator('professions')"
+                            class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border transition-colors {{ $professions_operator === 'in' ? 'bg-cyan-50 text-brand-cyan-dark border-cyan-200' : 'bg-rose-50 text-brand-pink border-rose-200' }}"
+                            title="Alternar entre que tenga la profesión o no">
+                            {{ $professions_operator === 'in' ? 'TIENE' : 'NO TIENE' }}
+                        </button>
+                    </div>
+                    <x-multi-searchable-select wire:model.live="profession_ids" label="" placeholder="Buscar profesiones..."
+                        defaultText="Todas las profesiones" :options="$professions->map(fn($p) => ['id' => $p->id, 'name' => $p->name])->values()->toArray()" />
+                </div>
+
+                <!-- 5. Estado Agente -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-gray-700 font-secondary uppercase tracking-wider truncate">Estado del Agente</label>
+                        <button type="button" wire:click="toggleOperator('statuses')"
+                            class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border transition-colors {{ $statuses_operator === 'in' ? 'bg-cyan-50 text-brand-cyan-dark border-cyan-200' : 'bg-rose-50 text-brand-pink border-rose-200' }}"
+                            title="Alternar entre que esté en el estado o no">
+                            {{ $statuses_operator === 'in' ? 'ES' : 'NO ES' }}
+                        </button>
+                    </div>
+                    <x-multi-searchable-select wire:model.live="statuses" label="" placeholder="Buscar estados..."
+                        defaultText="Todos los estados" :options="collect(\App\Enums\AgentStatus::cases())->map(fn($st) => ['id' => $st->value, 'name' => $st->label()])->values()->toArray()" />
+                </div>
+
+                <!-- 6. Documentación (IDÉNTICO A LOS DEMÁS) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-gray-700 font-secondary uppercase tracking-wider truncate">Documentación</label>
+                        <button type="button" wire:click="toggleOperator('documents')"
+                            class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border transition-colors {{ $documents_operator === 'in' ? 'bg-cyan-50 text-brand-cyan-dark border-cyan-200' : 'bg-rose-50 text-brand-pink border-rose-200' }}"
+                            title="Alternar entre que tenga el documento o lo adeude">
+                            {{ $documents_operator === 'in' ? 'TIENE' : 'NO TIENE' }}
+                        </button>
+                    </div>
+                    <x-multi-searchable-select wire:model.live="doc_type_ids" label="" placeholder="Buscar documentos..."
+                        defaultText="Todos los documentos" :options="$documentTypes->map(fn($d) => ['id' => $d->id, 'name' => $d->name])->values()->toArray()" />
+                </div>
+
             </div>
 
-            <div class="w-full flex-1 min-w-[200px]">
-                <x-searchable-select wire:model.live="profession_id" label="Profesión" placeholder="Buscar profesión..."
-                    defaultText="Todas" :options="collect($professions ?? [])->map(fn($profession) => ['id' => $profession->id, 'name' => $profession->name])->values()->toArray()" />
-            </div>
+            <!-- FILA 3: RESUMEN EN LENGUAJE HUMANO Y RESET -->
+            <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-secondary">
+                <div class="flex items-start gap-2 text-gray-600">
+                    <span class="px-2 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-bold text-gray-500 uppercase tracking-wider shrink-0 mt-0.5">
+                        Criterio
+                    </span>
+                    <div class="leading-relaxed">
+                        {!! $this->humanDescription !!}
+                    </div>
+                </div>
 
-            <div class="w-full flex-1 min-w-[200px]">
-                <x-searchable-select wire:model.live="status" label="Estado" placeholder="Buscar estado..."
-                    defaultText="Todos" :options="collect(\App\Enums\AgentStatus::cases())->map(fn($status) => ['id' => $status->value, 'name' => $status->name])->values()->toArray()" />
+                @if($this->hasActiveFilters())
+                    <button wire:click="clearAllFilters" type="button"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-brand-pink hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors font-secondary uppercase tracking-wider shrink-0 self-start sm:self-auto">
+                        <x-heroicon-o-trash class="w-4 h-4" />
+                        Limpiar Filtros
+                    </button>
+                @endif
             </div>
 
         </div>

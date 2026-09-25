@@ -414,49 +414,114 @@
                                 </div>
                             </div>
 
-                            <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-                                <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                    <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                        <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades Jerárquicas
-                                    </h3>
-                                    @can('editar.accesos')
-                                        <button wire:click="$set('showUnitModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
-                                            + Vincular Unidad
-                                        </button>
-                                    @endcan
-                                </div>
-                                <div class="p-5 flex-1">
-                                    @if($agent->hierarchicalUnits->isNotEmpty())
-                                        @foreach($agent->hierarchicalUnits as $unit)
-                                            <div class="relative pl-4 mb-4 border-l-2 border-brand-cyan">
-                                                <div class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-brand-cyan"></div>
-                                                <div class="flex items-start justify-between">
-                                                    <div>
-                                                        <p class="text-sm font-bold text-gray-900 uppercase">
-                                                            {{ $unit->alias ?? $unit->name ?? 'Unidad' }}
-                                                        </p>
-                                                        <div class="flex items-center gap-2 mt-1.5">
-                                                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100 rounded-md font-secondary">
-                                                                ID HSI: {{ $unit->id }}
-                                                            </span>
-                                                            @if($unit->pivot->responsible ?? false)
-                                                                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase rounded-md bg-amber-50 ring-1 ring-inset ring-amber-600/20 font-secondary">
-                                                                    Responsable
+                            <div class="space-y-6">
+                                <!-- UNIDADES VINCULADAS AL AGENTE (PERTENENCIA) -->
+                                <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+                                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                        <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                            <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades Jerárquicas (Pertenencia)
+                                        </h3>
+                                        @can('editar.accesos')
+                                            <button wire:click="$set('showUnitModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
+                                                + Vincular Unidad
+                                            </button>
+                                        @endcan
+                                    </div>
+                                    <div class="p-5 flex-1">
+                                        @if($agent->hierarchicalUnits->isNotEmpty())
+                                            @foreach($agent->hierarchicalUnits as $unit)
+                                                <div class="relative pl-4 mb-4 border-l-2 border-brand-cyan">
+                                                    <div class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-brand-cyan"></div>
+                                                    <div class="flex items-start justify-between">
+                                                        <div>
+                                                            <p class="text-sm font-bold text-gray-900 uppercase">
+                                                                {{ $unit->alias ?? $unit->name ?? 'Unidad' }}
+                                                            </p>
+                                                            <div class="flex items-center gap-2 mt-1.5">
+                                                                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100 rounded-md font-secondary">
+                                                                    ID HSI: {{ $unit->id }}
                                                                 </span>
-                                                            @endif
+                                                                @if($unit->pivot->responsible ?? false)
+                                                                    <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase rounded-md bg-amber-50 ring-1 ring-inset ring-amber-600/20 font-secondary">
+                                                                        Responsable
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </div>
+                                                        @can('editar.accesos')
+                                                            <button wire:click="confirmAction('unit', {{ $unit->id }}, '¿Seguro que deseas desvincular esta unidad jerárquica?')" class="transition-colors text-gray-400 hover:text-brand-pink">
+                                                                <x-heroicon-o-trash class="w-4 h-4" />
+                                                            </button>
+                                                        @endcan
                                                     </div>
-                                                    @can('editar.accesos')
-                                                        <button wire:click="confirmAction('unit', {{ $unit->id }}, '¿Seguro que deseas desvincular esta unidad jerárquica?')" class="transition-colors text-gray-400 hover:text-brand-pink">
-                                                            <x-heroicon-o-trash class="w-4 h-4" />
-                                                        </button>
-                                                    @endcan
+                                                </div>
+                                            @endforeach
+                                        @else
+                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">Sin unidades de pertenencia asignadas.</p>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <!-- ALCANCE ADMINISTRATIVO (HABILITACIÓN DE AGENDAS) -->
+                                @php $isUnitAdmin = $agent->isAdministrativeOfHierarchicalUnits(); @endphp
+                                <div class="bg-white shadow-sm rounded-xl border {{ $isUnitAdmin ? 'border-brand-blue/30' : 'border-gray-200 opacity-70' }} overflow-hidden flex flex-col">
+                                    <div class="px-5 py-4 border-b border-gray-100 {{ $isUnitAdmin ? 'bg-blue-50/40' : 'bg-gray-50' }} flex justify-between items-center">
+                                        <div>
+                                            <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                                <x-heroicon-o-calendar-days class="w-5 h-5 {{ $isUnitAdmin ? 'text-brand-blue' : 'text-gray-400' }}" />
+                                                Agendas / Alcance Administrativo
+                                            </h3>
+                                            <p class="text-[11px] text-gray-500 font-secondary mt-0.5">
+                                                Unidades específicas donde tiene permiso para gestionar turnos.
+                                            </p>
+                                        </div>
+
+                                        @if($isUnitAdmin)
+                                            @can('editar.accesos')
+                                                <button wire:click="openAccessModal" class="text-brand-blue hover:text-blue-700 text-xs font-bold font-secondary transition-colors border border-blue-200 bg-white px-3 py-1 rounded shadow-sm">
+                                                    Gestionar Accesos ({{ $agent->accessibleHierarchicalUnits->count() }})
+                                                </button>
+                                            @endcan
+                                        @endif
+                                    </div>
+
+                                    <div class="p-5 flex-1">
+                                        @if(! $isUnitAdmin)
+                                            <div class="p-4 bg-amber-50/60 rounded-lg border border-amber-200/60 flex items-start gap-3">
+                                                <x-heroicon-o-exclamation-circle class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                                <div class="text-xs font-secondary text-amber-800">
+                                                    <strong>Función Inactiva:</strong> El agente no posee asignado el rol <em>ADMINISTRATIVO DE UNIDADES JERÁRQUICAS</em>.
+                                                    @if($agent->accessibleHierarchicalUnits->isNotEmpty())
+                                                        <span class="block mt-1 text-gray-600">Conserva <strong>{{ $agent->accessibleHierarchicalUnits->count() }}</strong> asignaciones previas registradas pero deshabilitadas operativamente.</span>
+                                                    @endif
                                                 </div>
                                             </div>
-                                        @endforeach
-                                    @else
-                                        <p class="text-xs text-gray-500 font-secondary text-center py-4">Sin unidades jerárquicas asignadas.</p>
-                                    @endif
+                                        @elseif($agent->accessibleHierarchicalUnits->isEmpty())
+                                            <div class="text-center py-6">
+                                                <x-heroicon-o-calendar class="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                                                <p class="text-xs text-gray-500 font-secondary">Sin agendas asignadas. Presioná en <strong>Gestionar Accesos</strong> para habilitar unidades.</p>
+                                            </div>
+                                        @else
+                                            <div class="max-h-72 overflow-y-auto space-y-2 pr-1 col-scrollbar">
+                                                @foreach($agent->accessibleHierarchicalUnits as $accUnit)
+                                                    <div class="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-secondary">
+                                                        <div class="flex items-center gap-2 truncate">
+                                                            <span class="w-2 h-2 rounded-full bg-brand-blue shrink-0"></span>
+                                                            <span class="font-bold text-gray-800 truncate">{{ $accUnit->alias }}</span>
+                                                            <span class="text-[10px] text-gray-400 font-mono">#{{ $accUnit->id }}</span>
+                                                        </div>
+                                                        @can('editar.accesos')
+                                                            <button wire:click="revokeAccessUnit({{ $accUnit->id }})"
+                                                                title="Quitar acceso a esta agenda"
+                                                                class="text-gray-400 hover:text-brand-pink transition-colors ml-2">
+                                                                <x-heroicon-o-x-mark class="w-4 h-4" />
+                                                            </button>
+                                                        @endcan
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1169,6 +1234,119 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ASIGNACIÓN MASIVA DE AGENDAS HSI -->
+    <!-- MODAL DE ASIGNACIÓN MASIVA DE AGENDAS HSI -->
+    <div x-data="{
+        showModal: @entangle('showAccessModal'),
+        searchQuery: '',
+        allUnits: @js($hierarchicalUnits->map(fn($u) => ['id' => $u->id, 'name' => mb_strtolower($u->alias ?? $u->name)])),
+        get filteredIds() {
+            if (!this.searchQuery.trim()) {
+                return this.allUnits.map(u => u.id);
+            }
+            let q = this.searchQuery.toLowerCase();
+            return this.allUnits.filter(u => u.name.includes(q)).map(u => u.id);
+        },
+        toggleAllVisible(check) {
+            let visible = this.filteredIds;
+            let current = new Set(@entangle('selected_access_units'));
+            visible.forEach(id => {
+                if (check) current.add(id);
+                else current.delete(id);
+            });
+            $wire.set('selected_access_units', Array.from(current));
+        }
+    }"
+    x-show="showModal"
+    x-cloak
+    class="fixed inset-0 z-[160] overflow-y-auto"
+    role="dialog"
+    aria-modal="true">
+
+        <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="showModal = false"></div>
+
+        <div class="flex min-h-screen items-center justify-center p-4 relative z-10 pointer-events-none">
+            <div class="pointer-events-auto relative w-full max-w-3xl transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all border-t-4 border-brand-blue flex flex-col max-h-[88vh]">
+                
+                <div class="bg-white px-6 py-5 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2 font-secondary">
+                            <x-heroicon-o-calendar-days class="w-6 h-6 text-brand-blue" />
+                            Asignación de Unidades Jerárquicas para Agendas
+                        </h3>
+                        <button type="button" @click="showModal = false" class="text-gray-400 hover:text-gray-600">
+                            <x-heroicon-o-x-mark class="w-6 h-6" />
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 font-secondary mt-1">
+                        Marcá las unidades en las cuales este administrativo tendrá permiso para gestionar turnos.
+                    </p>
+                </div>
+
+                <!-- BARRA DE BÚSQUEDA Y ACCIONES RÁPIDAS -->
+                <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="relative w-full sm:max-w-xs">
+                        <input x-model="searchQuery" type="text" placeholder="Filtrar unidades..."
+                            class="w-full text-xs pl-8 pr-3 py-1.5 rounded-md border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue font-secondary">
+                        <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-2.5 top-2 pointer-events-none" />
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button type="button" @click="toggleAllVisible(true)"
+                            class="text-[11px] font-bold uppercase text-brand-blue bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded transition-colors font-secondary">
+                            Marcar Visibles
+                        </button>
+                        <button type="button" @click="toggleAllVisible(false)"
+                            class="text-[11px] font-bold uppercase text-gray-600 bg-white hover:bg-gray-100 border border-gray-300 px-2.5 py-1 rounded transition-colors font-secondary">
+                            Desmarcar Visibles
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LISTADO CON CHECKBOXES -->
+                <div class="p-6 overflow-y-auto flex-1 bg-white space-y-1">
+                    @foreach($hierarchicalUnits as $unit)
+                        <label wire:key="chk-acc-{{ $unit->id }}"
+                            x-show="filteredIds.includes({{ $unit->id }})"
+                            class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" wire:model="selected_access_units" value="{{ $unit->id }}"
+                                    class="rounded border-gray-300 text-brand-blue focus:ring-brand-blue w-4 h-4">
+                                <div>
+                                    <span class="text-xs font-bold text-gray-800 font-secondary">{{ $unit->alias }}</span>
+                                    @if($unit->type)
+                                        <span class="text-[10px] text-gray-400 ml-1">({{ $unit->type->description }})</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-mono text-gray-400">#{{ $unit->id }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+                <!-- FOOTER -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                    <span class="text-xs text-gray-600 font-secondary">
+                        Seleccionadas: <strong class="text-brand-blue">{{ count($selected_access_units) }}</strong> unidades
+                    </span>
+
+                    <div class="flex items-center gap-3">
+                        <button type="button" @click="showModal = false"
+                            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-md font-secondary">
+                            Cancelar
+                        </button>
+                        <button type="button" wire:click="saveAccessUnits" wire:loading.attr="disabled"
+                            class="px-5 py-2 bg-brand-blue hover:bg-blue-700 text-white text-xs font-bold rounded-md shadow-sm font-secondary disabled:opacity-50">
+                            <span wire:loading.remove wire:target="saveAccessUnits">Confirmar y Guardar</span>
+                            <span wire:loading wire:target="saveAccessUnits">Sincronizando...</span>
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

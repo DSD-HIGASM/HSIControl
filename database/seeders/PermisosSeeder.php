@@ -34,6 +34,7 @@ class PermisosSeeder extends Seeder
             'editar.documentos',
             'ver.unidades_jerarquicas',
             'gestionar.unidades_jerarquicas',
+            'gestionar.miky',
         ];
 
         // 1. Idempotencia en lote: Consultar cuáles ya existen bajo el guard 'web'

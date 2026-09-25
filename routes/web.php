@@ -15,6 +15,9 @@ use App\Http\Controllers\Agents\AgentPrintController;
 use App\Http\Controllers\Agents\AgentController;
 use App\Livewire\HierarchicalUnits\Manager;
 use App\Http\Controllers\Agents\AgentImportController;
+use App\Models\MikyTerminal;
+use App\Services\MikyMeshService;
+use App\Livewire\Miky\MikyDashboard;
 
 Route::view('/', 'dashboard')
     ->middleware(['auth', 'verified'])
@@ -73,6 +76,28 @@ Route::get('/padron/{agent}/ficha/imprimir', [AgentController::class, 'printFich
 // APIs
 
 Route::get('/agentes/importar-rapido', [AgentImportController::class, 'importGet'])->name('agents.import_get');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/miky', MikyDashboard::class)->name('miky.index');
+
+    // Esta es la ruta que falta:
+    Route::get('/miky/terminals/{terminal}/screenshot', function (MikyTerminal $terminal, MikyMeshService $service) {
+        $base64 = $service->getScreenshot($terminal);
+
+        if (! $base64) {
+            // PNG 1x1 transparente si la terminal está offline o no responde
+            return response(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='), 200, [
+                'Content-Type' => 'image/png',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            ]);
+        }
+
+        return response(base64_decode($base64), 200, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        ]);
+    })->name('miky.screenshot');
+});
 
 
 // Route::prefix('admin/configuracion')->middleware(['auth', 'role:Administrador'])->group(function () {

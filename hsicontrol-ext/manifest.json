@@ -15,7 +15,7 @@
   ],
   "host_permissions": [
     "https://shc.ms.gba.gov.ar/*",
-    "https://hsi.sdhigasanmartin.qzz.io/*"
+    "https://hsi.sdhigasanmartin.com.ar/*"
   ],
   "action": {
     "default_popup": "popup.html",

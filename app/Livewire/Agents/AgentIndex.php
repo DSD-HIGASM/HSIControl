@@ -5,6 +5,7 @@ namespace App\Livewire\Agents;
 use App\Enums\AgentGender;
 use App\Enums\AgentStatus;
 use App\Models\Agent;
+use App\Models\DocumentType;
 use App\Models\HsiPatientSync;
 use App\Models\HsiRole;
 use App\Models\Occupation;
@@ -18,44 +19,42 @@ class AgentIndex extends Component
 {
     use WithPagination;
 
-    // --- Filtros de la Tabla ---
+    // --- Búsqueda Textual ---
     public string $search = '';
 
-    public string $service_id = '';
+    // --- Filtros Multi-selección con Operadores ---
+    public string $roles_operator = 'in'; // 'in' (TIENE) | 'not_in' (NO TIENE)
+    public array $role_ids = [];
 
-    public string $profession_id = '';
+    public string $services_operator = 'in'; // 'in' (ES) | 'not_in' (NO ES)
+    public array $service_ids = [];
 
-    public string $status = '';
+    public string $professions_operator = 'in'; // 'in' (TIENE) | 'not_in' (NO TIENE)
+    public array $profession_ids = [];
+
+    public string $statuses_operator = 'in'; // 'in' (ES) | 'not_in' (NO ES)
+    public array $statuses = [];
+
+    public string $documents_operator = 'in'; // 'in' (TIENE) | 'not_in' (NO TIENE / ADEUDA)
+    public array $doc_type_ids = [];
 
     // --- Modales ---
     public bool $showCreateModal = false;
-
     public bool $showExportModal = false;
+    public bool $showTokenModal = false;
+    public ?string $generatedToken = null;
+    public bool $showPendingModal = false;
 
     // --- Formulario Nuevo Agente ---
     public string $new_first_name = '';
-
     public ?string $new_second_first_name = null;
-
     public string $new_last_name = '';
-
     public ?string $new_second_last_name = null;
-
     public string $new_dni = '';
-
     public string $new_gender = '';
-
     public string $new_email = '';
-
     public string $new_phone = '';
-
     public ?int $new_service_id = null;
-
-    public bool $showTokenModal = false;
-
-    public ?string $generatedToken = null;
-
-    public bool $showPendingModal = false;
 
     protected function rules()
     {
@@ -72,39 +71,115 @@ class AgentIndex extends Component
         ];
     }
 
+    public function updatedSearch(): void { $this->resetPage(); }
+    public function updatedRoleIds(): void { $this->resetPage(); }
+    public function updatedRolesOperator(): void { $this->resetPage(); }
+    public function updatedServiceIds(): void { $this->resetPage(); }
+    public function updatedServicesOperator(): void { $this->resetPage(); }
+    public function updatedProfessionIds(): void { $this->resetPage(); }
+    public function updatedProfessionsOperator(): void { $this->resetPage(); }
+    public function updatedStatuses(): void { $this->resetPage(); }
+    public function updatedStatusesOperator(): void { $this->resetPage(); }
+    public function updatedDocTypeIds(): void { $this->resetPage(); }
+    public function updatedDocumentsOperator(): void { $this->resetPage(); }
+
+    public function toggleOperator(string $filter): void
+    {
+        $prop = $filter . '_operator';
+        if (property_exists($this, $prop)) {
+            $this->{$prop} = $this->{$prop} === 'in' ? 'not_in' : 'in';
+            $this->resetPage();
+        }
+    }
+
+    public function clearAllFilters(): void
+    {
+        $this->reset([
+            'search',
+            'role_ids',
+            'roles_operator',
+            'service_ids',
+            'services_operator',
+            'profession_ids',
+            'professions_operator',
+            'statuses',
+            'statuses_operator',
+            'doc_type_ids',
+            'documents_operator',
+        ]);
+        $this->resetPage();
+    }
+
+    public function hasActiveFilters(): bool
+    {
+        return ! empty($this->search)
+            || ! empty($this->role_ids)
+            || ! empty($this->service_ids)
+            || ! empty($this->profession_ids)
+            || ! empty($this->statuses)
+            || ! empty($this->doc_type_ids);
+    }
+
+    public function getHumanDescriptionProperty(): string
+    {
+        if (! $this->hasActiveFilters()) {
+            return 'Mostrando todos los agentes sin filtros aplicados.';
+        }
+
+        $clauses = [];
+
+        if (! empty($this->search)) {
+            $clauses[] = 'cuyo nombre, apellido o DNI contenga <strong class="text-gray-900 font-bold">"'.$this->search.'"</strong>';
+        }
+
+        if (! empty($this->role_ids)) {
+            $names = HsiRole::whereIn('id', $this->role_ids)->pluck('name')->map(fn ($n) => mb_strtoupper($n))->implode(', ');
+            $op = $this->roles_operator === 'not_in' ? 'NO TENGAN el rol' : 'TENGAN el rol';
+            $color = $this->roles_operator === 'not_in' ? 'text-brand-pink' : 'text-brand-cyan-dark';
+            $clauses[] = "que <span class=\"font-bold uppercase {$color}\">{$op}</span> <strong class=\"text-gray-900\">({$names})</strong>";
+        }
+
+        if (! empty($this->service_ids)) {
+            $names = Service::whereIn('id', $this->service_ids)->pluck('name')->implode(', ');
+            $op = $this->services_operator === 'not_in' ? 'NO PERTENEZCAN al servicio' : 'PERTENEZCAN al servicio';
+            $color = $this->services_operator === 'not_in' ? 'text-brand-pink' : 'text-brand-cyan-dark';
+            $clauses[] = "que <span class=\"font-bold uppercase {$color}\">{$op}</span> <strong class=\"text-gray-900\">({$names})</strong>";
+        }
+
+        if (! empty($this->profession_ids)) {
+            $names = Occupation::whereIn('id', $this->profession_ids)->pluck('name')->implode(', ');
+            $op = $this->professions_operator === 'not_in' ? 'NO TENGAN la profesión' : 'TENGAN la profesión';
+            $color = $this->professions_operator === 'not_in' ? 'text-brand-pink' : 'text-brand-cyan-dark';
+            $clauses[] = "que <span class=\"font-bold uppercase {$color}\">{$op}</span> <strong class=\"text-gray-900\">({$names})</strong>";
+        }
+
+        if (! empty($this->statuses)) {
+            $names = collect($this->statuses)->map(fn ($s) => AgentStatus::tryFrom($s)?->label() ?? $s)->implode(', ');
+            $op = $this->statuses_operator === 'not_in' ? 'NO ESTÉN en estado' : 'ESTÉN en estado';
+            $color = $this->statuses_operator === 'not_in' ? 'text-brand-pink' : 'text-brand-cyan-dark';
+            $clauses[] = "que <span class=\"font-bold uppercase {$color}\">{$op}</span> <strong class=\"text-gray-900\">{$names}</strong>";
+        }
+
+        if (! empty($this->doc_type_ids)) {
+            $names = DocumentType::whereIn('id', $this->doc_type_ids)->pluck('name')->implode(', ');
+            $op = $this->documents_operator === 'not_in' ? 'ADEUDEN / NO TENGAN PRESENTADO' : 'TENGAN PRESENTADO';
+            $color = $this->documents_operator === 'not_in' ? 'text-brand-pink' : 'text-brand-cyan-dark';
+            $clauses[] = "que <span class=\"font-bold uppercase {$color}\">{$op}</span> <strong class=\"text-gray-900\">({$names})</strong>";
+        }
+
+        return 'Mostrando agentes '.implode(' <strong class="text-gray-400 font-bold mx-1">Y</strong> ', $clauses).'.';
+    }
+
     public function generateApiToken()
     {
-        // [Inferencia] Usamos el usuario autenticado para emitir el token de Sanctum
         $tokenResult = auth()->user()->createToken('Extension HSI');
-
-        // Mostramos el texto plano del token solo esta vez
         $this->generatedToken = $tokenResult->plainTextToken;
     }
 
     public function closeTokenModal()
     {
         $this->showTokenModal = false;
-        $this->generatedToken = null; // Limpiamos por seguridad
-    }
-
-    public function updatedSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedServiceId(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedProfessionId(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedStatus(): void
-    {
-        $this->resetPage();
+        $this->generatedToken = null;
     }
 
     public function saveAgent()
@@ -153,18 +228,14 @@ class AgentIndex extends Component
 
     public function processImport($syncId)
     {
-        // 1. Recuperamos el registro temporal de la tabla intermedia
         $sync = HsiPatientSync::findOrFail($syncId);
 
-        // 2. Extraemos los bloques JSON decodificados automáticamente por los casts
         $completed = $sync->completed_data;
         $personal = $sync->personal_info;
         $user = $sync->user_data;
         $roles = $sync->roles_data;
-
         $dni = $sync->dni;
 
-        // 3. Verificamos duplicados de última hora en el padrón real
         $existingAgent = Agent::withTrashed()->where('dni', $dni)->first();
 
         if ($existingAgent) {
@@ -186,7 +257,6 @@ class AgentIndex extends Component
 
             $agent = $existingAgent;
         } else {
-            // Mapeo genérico de género
             $genderDesc = strtolower($completed['gender']['description'] ?? '');
             $gender = match ($genderDesc) {
                 'femenino' => AgentGender::FEMENINO->value,
@@ -194,7 +264,6 @@ class AgentIndex extends Component
                 default => AgentGender::X->value,
             };
 
-            // 4. Inserción limpia en la tabla agents
             $agent = Agent::create([
                 'first_name' => $completed['firstName'],
                 'second_first_name' => $completed['middleName'] ?? null,
@@ -211,12 +280,9 @@ class AgentIndex extends Component
             ]);
         }
 
-        // 5. Sincronización e impacto de roles HSI ignorando mayúsculas/minúsculas
         if (! empty($roles)) {
-            // Extraemos los nombres y los normalizamos a minúsculas
             $roleNames = collect($roles)->map(fn ($r) => mb_strtolower(trim($r['roleDescription'])))->toArray();
 
-            // Cambiamos el whereRaw por un query builder limpio con funciones nativas
             $roleIds = HsiRole::where(function ($q) use ($roleNames) {
                 foreach ($roleNames as $name) {
                     $q->orWhereRaw('LOWER(name) = ?', [$name]);
@@ -226,124 +292,148 @@ class AgentIndex extends Component
             $agent->hsiRoles()->sync($roleIds);
         }
 
-        // 6. Marcamos el registro intermedio como procesado
-        $sync->update([
-            'processed_at' => now(),
-        ]);
-
+        $sync->update(['processed_at' => now()]);
         $this->showPendingModal = false;
 
-        // 7. Redirección limpia al dashboard/legajo usando tu formato estándar con wire:navigate
         return $this->redirectRoute('agents.show', $agent->id, navigate: true);
     }
 
     public function render()
-{
-    // --- NUEVO: Filtro de visibilidad para importaciones pendientes ---
-    // Trae globales (is_global = true) O individuales que correspondan al usuario logueado
-    $pendingImports = HsiPatientSync::whereNull('processed_at')
-        ->where(function ($query) {
-            $query->where('is_global', true)
-                ->orWhere(function ($subQuery) {
-                    $subQuery->where('is_global', false)
-                             ->where('user_id', auth()->id());
+    {
+        $pendingImports = HsiPatientSync::whereNull('processed_at')
+            ->where(function ($query) {
+                $query->where('is_global', true)
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->where('is_global', false)
+                            ->where('user_id', auth()->id());
+                    });
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $query = Agent::with([
+            'service',
+            'agentProfessions.profession',
+            'agentProfessions.specialty',
+            'documents',
+            'hsiRoles.documentTypes',
+        ]);
+
+        $query->orderByRaw("
+            CASE status
+                WHEN '".AgentStatus::PENDIENTE->value."' THEN ".AgentStatus::PENDIENTE->priority()."
+                WHEN '".AgentStatus::ACTIVO->value."' THEN ".AgentStatus::ACTIVO->priority()."
+                WHEN '".AgentStatus::INACTIVO->value."' THEN ".AgentStatus::INACTIVO->priority().'
+                ELSE 4
+            END ASC
+        ')->orderBy('id', 'desc');
+
+        // 1. Roles HSI
+        if (! empty($this->role_ids)) {
+            if ($this->roles_operator === 'not_in') {
+                $query->whereDoesntHave('hsiRoles', fn ($q) => $q->whereIn('hsi_roles.id', $this->role_ids));
+            } else {
+                $query->whereHas('hsiRoles', fn ($q) => $q->whereIn('hsi_roles.id', $this->role_ids));
+            }
+        }
+
+        // 2. Servicio Base
+        if (! empty($this->service_ids)) {
+            if ($this->services_operator === 'not_in') {
+                $query->where(function ($sub) {
+                    $sub->whereNotIn('service_id', $this->service_ids)
+                        ->orWhereNull('service_id');
                 });
-        })
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    // Mantenemos tu variable dinámica basándonos en la consulta filtrada
-    $pendingSyncCount = $pendingImports->count();
-
-    $query = Agent::with([
-        'service',
-        'agentProfessions.profession',
-        'agentProfessions.specialty',
-        'documents',
-        'hsiRoles.documentTypes',
-    ]);
-
-    // --- Orden por prioridad de Enum y luego por ID ---
-    $query->orderByRaw("
-    CASE status
-        WHEN '".AgentStatus::PENDIENTE->value."' THEN ".AgentStatus::PENDIENTE->priority()."
-        WHEN '".AgentStatus::ACTIVO->value."' THEN ".AgentStatus::ACTIVO->priority()."
-        WHEN '".AgentStatus::INACTIVO->value."' THEN ".AgentStatus::INACTIVO->priority().'
-        ELSE 4
-    END ASC
-')->orderBy('id', 'desc');
-
-    if (! empty($this->status) && ($status = AgentStatus::tryFrom($this->status))) {
-        $query->where('status', $status->value);
-    }
-
-    if (! empty($this->service_id)) {
-        $query->where('service_id', $this->service_id);
-    }
-
-    if (! empty($this->profession_id)) {
-        $query->whereHas('agentProfessions', function ($q) {
-            $q->where('profession_id', $this->profession_id);
-        });
-    }
-
-    if (! empty($this->search)) {
-        // 1. Limpiamos las tildes y pasamos a minúscula el texto del usuario en PHP
-        $cleanSearch = mb_strtolower(trim($this->search), 'UTF-8');
-        $cleanSearch = str_replace(
-            ['á', 'é', 'í', 'ó', 'ú', 'ä', 'ë', 'ï', 'ö', 'ü'],
-            ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u'],
-            $cleanSearch
-        );
-
-        // Separamos el texto limpio en palabras
-        $terms = preg_split('/\s+/', $cleanSearch);
-
-        // 2. Armamos un bloque SQL bruto para normalizar las columnas de la BD al vuelo.
-        $normalizeSql = function ($column) {
-            return "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER({$column}), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'Á', 'a'), 'É', 'e'), 'Í', 'i'), 'Ó', 'o'), 'Ú', 'u')";
-        };
-
-        $query->where(function ($q) use ($terms, $normalizeSql) {
-    foreach ($terms as $term) {
-        // 1. Creamos una versión limpia del término dejando SOLO números
-        $termNumerico = preg_replace('/[^0-9]/', '', $term);
-
-        $q->where(function ($subQ) use ($term, $termNumerico, $normalizeSql) {
-            // 2. Si el término limpio no está vacío, buscamos por DNI numérico
-            if (!empty($termNumerico)) {
-                $subQ->where('dni', 'like', "%{$termNumerico}%");
             } else {
-                // Si el usuario solo escribió letras o puntos sin números, 
-                // forzamos un estado falso para que el "orWhere" de los nombres funcione correctamente
-                $subQ->whereRaw('1 = 0'); 
+                $query->whereIn('service_id', $this->service_ids);
             }
+        }
 
-            // 3. El resto de los campos de texto siguen buscando con el término original
-            $subQ->orWhereRaw($normalizeSql('last_name').' LIKE ?', ["%{$term}%"])
-                ->orWhereRaw($normalizeSql('second_last_name').' LIKE ?', ["%{$term}%"])
-                ->orWhereRaw($normalizeSql('first_name').' LIKE ?', ["%{$term}%"])
-                ->orWhereRaw($normalizeSql('second_first_name').' LIKE ?', ["%{$term}%"]);
-
-            // 4. Opcional: También puedes usar el término numérico para el teléfono si lo prefieres
-            if (!empty($termNumerico)) {
-                $subQ->orWhere('phone', 'like', "%{$termNumerico}%");
+        // 3. Profesión
+        if (! empty($this->profession_ids)) {
+            if ($this->professions_operator === 'not_in') {
+                $query->whereDoesntHave('agentProfessions', fn ($q) => $q->whereIn('profession_id', $this->profession_ids));
             } else {
-                $subQ->orWhere('phone', 'like', "%{$term}%");
+                $query->whereHas('agentProfessions', fn ($q) => $q->whereIn('profession_id', $this->profession_ids));
             }
-        });
-    }
-});
+        }
 
-    }
+        // 4. Estado
+        if (! empty($this->statuses)) {
+            if ($this->statuses_operator === 'not_in') {
+                $query->whereNotIn('status', $this->statuses);
+            } else {
+                $query->whereIn('status', $this->statuses);
+            }
+        }
 
-    return view('livewire.agents.agent-index', [
-        'agents' => $query->paginate(15),
-        'services' => Service::orderBy('name')->get(),
-        'professions' => Occupation::orderBy('name')->get(),
-        'genders' => AgentGender::selectableCases(),
-        'pending_sync_count' => $pendingSyncCount,
-        'pendingImports' => $pendingImports, // <-- Enviado directo a la vista del modal
-    ]);
-}
+        // 5. Documentación
+        if (! empty($this->doc_type_ids)) {
+            if ($this->documents_operator === 'not_in') {
+                // Adeuda o le falta al menos uno de los documentos seleccionados
+                $query->where(function ($sub) {
+                    foreach ($this->doc_type_ids as $docId) {
+                        $sub->orWhereDoesntHave('documents', fn ($q) => $q->where('type_id', $docId)->whereNull('deleted_at'));
+                    }
+                });
+            } else {
+                // Posee entregados TODOS los documentos seleccionados
+                foreach ($this->doc_type_ids as $docId) {
+                    $query->whereHas('documents', fn ($q) => $q->where('type_id', $docId)->whereNull('deleted_at'));
+                }
+            }
+        }
+
+        // 6. Búsqueda Textual
+        if (! empty($this->search)) {
+            $cleanSearch = mb_strtolower(trim($this->search), 'UTF-8');
+            $cleanSearch = str_replace(
+                ['á', 'é', 'í', 'ó', 'ú', 'ä', 'ë', 'ï', 'ö', 'ü'],
+                ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u'],
+                $cleanSearch
+            );
+
+            $terms = preg_split('/\s+/', $cleanSearch);
+
+            $normalizeSql = function ($column) {
+                return "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER({$column}), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'Á', 'a'), 'É', 'e'), 'Í', 'i'), 'Ó', 'o'), 'Ú', 'u')";
+            };
+
+            $query->where(function ($q) use ($terms, $normalizeSql) {
+                foreach ($terms as $term) {
+                    $termNumerico = preg_replace('/[^0-9]/', '', $term);
+
+                    $q->where(function ($subQ) use ($term, $termNumerico, $normalizeSql) {
+                        if (! empty($termNumerico)) {
+                            $subQ->where('dni', 'like', "%{$termNumerico}%");
+                        } else {
+                            $subQ->whereRaw('1 = 0');
+                        }
+
+                        $subQ->orWhereRaw($normalizeSql('last_name').' LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw($normalizeSql('second_last_name').' LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw($normalizeSql('first_name').' LIKE ?', ["%{$term}%"])
+                            ->orWhereRaw($normalizeSql('second_first_name').' LIKE ?', ["%{$term}%"]);
+
+                        if (! empty($termNumerico)) {
+                            $subQ->orWhere('phone', 'like', "%{$termNumerico}%");
+                        } else {
+                            $subQ->orWhere('phone', 'like', "%{$term}%");
+                        }
+                    });
+                }
+            });
+        }
+
+        return view('livewire.agents.agent-index', [
+            'agents'             => $query->paginate(15),
+            'services'           => Service::orderBy('name')->get(),
+            'professions'        => Occupation::orderBy('name')->get(),
+            'hsiRoles'           => HsiRole::orderBy('name')->get(),
+            'documentTypes'      => DocumentType::orderBy('name')->get(),
+            'genders'            => AgentGender::selectableCases(),
+            'pending_sync_count' => $pendingImports->count(),
+            'pendingImports'     => $pendingImports,
+        ]);
+    }
 }

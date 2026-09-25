@@ -1,5 +1,5 @@
 // Configuración base
-const HSI_CONTROL_URL = 'https://hsi.sdhigasanmartin.qzz.io';
+const HSI_CONTROL_URL = 'https://hsi.sdhigasanmartin.com.ar';
 const INSTITUTION_ID = 484;
 
 // Función principal que orquesta la extracción
@@ -203,15 +203,15 @@ function injectButton() {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 12px; 
-        background-color: #0ea5e9; 
-        color: white; 
-        border: none; 
-        border-radius: 6px; 
+        padding: 6px 12px;
+        background-color: #0ea5e9;
+        color: white;
+        border: none;
+        border-radius: 6px;
         font-family: system-ui, -apple-system, sans-serif;
         font-size: 12px;
-        font-weight: 700; 
-        cursor: pointer; 
+        font-weight: 700;
+        cursor: pointer;
         transition: all 0.2s;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         ${isFloatingTop ? 'position: absolute; top: 75px; right: 20px; z-index: 9999;' : 'margin-left: 12px;'}
