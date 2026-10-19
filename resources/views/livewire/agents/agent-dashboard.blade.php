@@ -1,11 +1,52 @@
-<div class="min-h-screen bg-gray-50 py-8 relative" x-data="{ activeTab: @entangle('tab') }">
+<div class="min-h-screen bg-gray-50 py-8 relative" x-data="{ 
+    activeTab: @entangle('tab'),
+    tabs: @js($agent->academicProfile ? ['personal', 'universidad', 'profesional', 'hsi', 'documentos', 'notas'] : ['personal', 'profesional', 'hsi', 'documentos', 'notas']),
+    get activeIndex() {
+        let idx = this.tabs.indexOf(this.activeTab);
+        return idx === -1 ? 0 : idx;
+    },
+    updateHeight() {
+        this.$nextTick(() => {
+            let activeEl = this.$refs['tab_' + this.activeTab];
+            if (activeEl && this.$refs.tabContainer) {
+                this.$refs.tabContainer.style.height = activeEl.offsetHeight + 'px';
+            }
+        });
+    },
+    initTabsSlider() {
+        this.updateHeight();
+        this.$watch('activeTab', () => { setTimeout(() => this.updateHeight(), 50); });
+        const resizeObserver = new ResizeObserver(() => this.updateHeight());
+        this.tabs.forEach(tab => {
+            let el = this.$refs['tab_' + tab];
+            if (el) resizeObserver.observe(el);
+        });
+    }
+}" x-init="initTabsSlider()">
     <style>
-        [x-cloak] { display: none !important; }
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 
     <div class="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
+        <!-- MENSAJES DE ESTADO FLASH -->
+        @if (session()->has('status'))
+            <div
+                class="mb-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold font-secondary flex items-center justify-between shadow-xs">
+                <div class="flex items-center gap-2">
+                    <x-heroicon-s-check-circle class="w-5 h-5 text-emerald-600 shrink-0" />
+                    <span>{{ session('status') }}</span>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
+                    <x-heroicon-o-x-mark class="w-4 h-4" />
+                </button>
+            </div>
+        @endif
+
+        <div
+            class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="flex items-center gap-2 text-sm font-secondary text-gray-500">
                 <a href="{{ route('agents.index') }}" wire:navigate
                     class="hover:text-brand-cyan transition-colors flex items-center gap-1 font-bold">
@@ -20,18 +61,28 @@
 
             <div class="flex items-center gap-3">
                 @if (($agent->gender) && ($agent->gender->value == 'pendiente'))
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-lg shadow-sm">
+                    <span
+                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-lg shadow-sm">
                         <x-heroicon-s-exclamation-triangle class="w-4 h-4 text-red-500" />
                         Género pendiente
                     </span>
                 @endif
 
                 @if($agent->agentProfessions && $agent->agentProfessions->contains('profession_id', 17))
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-sm"
+                    <span
+                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-sm"
                         title="Esta jefatura está cargada como profesión y debe corregirse">
                         <x-heroicon-s-user class="w-4 h-4 text-blue-500" />
                         Jefe de Servicio (A Corregir)
                     </span>
+                @endif
+
+                @if(!$agent->academicProfile)
+                    <button wire:click="openCreateAcademicModal"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-cyan/10 hover:bg-brand-cyan/20 text-brand-cyan-dark border border-brand-cyan/30 rounded-lg text-xs font-bold transition-colors shadow-sm font-secondary">
+                        <x-heroicon-o-academic-cap class="w-4 h-4 text-brand-cyan" />
+                        + Agregar a Universidad (UNLP)
+                    </button>
                 @endif
 
                 <a href="{{ route('agents.print_ficha', $agent->id) }}" target="_blank"
@@ -51,24 +102,34 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 {{ $agent->status->color() ?? 'bg-gray-400' }}"></div>
             <div class="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                <div class="h-20 w-20 rounded-full bg-white flex items-center justify-center font-bold text-2xl border-4 shrink-0 {{ $agent->status->color() ?? 'border-gray-200 text-gray-500' }}">
+                <div
+                    class="h-20 w-20 rounded-full bg-white flex items-center justify-center font-bold text-2xl border-4 shrink-0 {{ $agent->status->color() ?? 'border-gray-200 text-gray-500' }}">
                     {{ strtoupper($initials) }}
                 </div>
 
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-1">
                         <h1 class="text-2xl font-bold text-gray-900 uppercase tracking-tight">
-                            {{ $agent->last_name }} {{ $agent->second_last_name }}, {{ $agent->first_name }} {{ $agent->second_first_name }}
+                            {{ $agent->last_name }} {{ $agent->second_last_name }}, {{ $agent->first_name }}
+                            {{ $agent->second_first_name }}
                         </h1>
-                        <span class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ring-1 ring-inset font-secondary tracking-wider {{ $agent->status->color() ?? 'bg-gray-100' }}">
+                        <span
+                            class="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ring-1 ring-inset font-secondary tracking-wider {{ $agent->status->color() ?? 'bg-gray-100' }}">
                             {{ strtoupper($statusValue) }}
                         </span>
+                        @if($agent->academicProfile)
+                            <span
+                                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 font-secondary">
+                                <x-heroicon-o-academic-cap class="w-3.5 h-3.5 text-indigo-600" /> Convenio UNLP
+                            </span>
+                        @endif
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-y-3 gap-x-6 mt-4 text-sm font-secondary">
                         <div class="flex items-center gap-2 text-gray-600">
                             <x-heroicon-o-identification class="w-4 h-4 text-gray-400" />
-                            <span class="font-bold text-gray-800">DNI:</span> {{ number_format($agent->dni, 0, ',', '.') }}
+                            <span class="font-bold text-gray-800">DNI:</span>
+                            {{ number_format($agent->dni, 0, ',', '.') }}
                         </div>
 
                         @if($agent->person_id)
@@ -76,7 +137,8 @@
                                 target="_blank"
                                 class="flex items-center gap-2 text-brand-cyan hover:text-brand-cyan-dark transition-colors group">
                                 <x-heroicon-o-finger-print class="w-4 h-4" />
-                                <span class="font-bold text-gray-800 group-hover:text-brand-cyan-dark">ID HSI:</span> {{ $agent->person_id }}
+                                <span class="font-bold text-gray-800 group-hover:text-brand-cyan-dark">ID HSI:</span>
+                                {{ $agent->person_id }}
                             </a>
                         @else
                             <div class="flex items-center gap-2 text-gray-400 italic">
@@ -93,12 +155,14 @@
                         <a href="https://wa.me/549{{ preg_replace('/[^0-9]/', '', $agent->phone) }}" target="_blank"
                             class="flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors group">
                             <x-heroicon-o-phone class="w-4 h-4" />
-                            <span class="font-bold text-gray-800 group-hover:text-green-700">Tel:</span> {{ $agent->phone }}
+                            <span class="font-bold text-gray-800 group-hover:text-green-700">Tel:</span>
+                            {{ $agent->phone }}
                         </a>
 
                         <div class="flex items-center gap-2 text-gray-600 md:col-span-4">
                             <x-heroicon-o-building-office-2 class="w-4 h-4 text-gray-400" />
-                            <span class="font-bold text-gray-800">Servicio Base:</span> {{ $agent->service->name ?? 'Sin asignar' }}
+                            <span class="font-bold text-gray-800">Servicio Base:</span>
+                            {{ $agent->service->name ?? 'Sin asignar' }}
                         </div>
                     </div>
                 </div>
@@ -112,6 +176,13 @@
                     class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-colors font-secondary flex items-center gap-2">
                     <x-heroicon-o-user class="w-4 h-4" /> Datos Personales
                 </a>
+                @if($agent->academicProfile)
+                    <a href="#" @click.prevent="activeTab = 'universidad'"
+                        :class="activeTab === 'universidad' ? 'border-brand-cyan text-brand-cyan-dark font-bold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-colors font-secondary flex items-center gap-2">
+                        <x-heroicon-o-academic-cap class="w-4 h-4 text-brand-cyan" /> Convenio UNLP
+                    </a>
+                @endif
                 <a href="#" @click.prevent="activeTab = 'profesional'"
                     :class="activeTab === 'profesional' ? 'border-brand-cyan text-brand-cyan-dark font-bold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 text-sm transition-colors font-secondary flex items-center gap-2">
@@ -128,7 +199,8 @@
                     <x-heroicon-o-folder-open class="w-4 h-4" /> Legajo Digital
                     @if($missingMandatoryTypes->count() > 0)
                         <span class="absolute top-3 -right-2 flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-pink opacity-75"></span>
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-pink opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-pink"></span>
                         </span>
                     @endif
@@ -142,39 +214,20 @@
         </div>
 
         <!-- CONTENEDOR SLIDER CON ANIMACIÓN DINÁMICA DE ALTURA -->
-        <div class="pb-10" x-data="{
-            tabs: ['personal', 'profesional', 'hsi', 'documentos', 'notas'],
-            get activeIndex() {
-                let idx = this.tabs.indexOf(this.activeTab);
-                return idx === -1 ? 0 : idx;
-            },
-            updateHeight() {
-                this.$nextTick(() => {
-                    let activeEl = this.$refs['tab_' + this.activeTab];
-                    if (activeEl) {
-                        this.$refs.tabContainer.style.height = activeEl.offsetHeight + 'px';
-                    }
-                });
-            },
-            initTabsSlider() {
-                this.updateHeight();
-                this.$watch('activeTab', () => { setTimeout(() => this.updateHeight(), 50); });
-                const resizeObserver = new ResizeObserver(() => this.updateHeight());
-                this.tabs.forEach(tab => {
-                    let el = this.$refs['tab_' + tab];
-                    if (el) resizeObserver.observe(el);
-                });
-            }
-        }" x-init="initTabsSlider()">
-
-            <div class="relative w-full overflow-hidden transition-[height] duration-500 ease-in-out" x-ref="tabContainer" x-cloak>
-                <div class="flex transition-transform duration-500 ease-in-out items-start w-full" :style="`transform: translateX(-${activeIndex * 100}%)`">
+        <div class="pb-10">
+            <div class="relative w-full overflow-hidden transition-[height] duration-500 ease-in-out"
+                x-ref="tabContainer" x-cloak>
+                <div class="flex transition-transform duration-500 ease-in-out items-start w-full"
+                    :style="`transform: translateX(-${activeIndex * 100}%)`">
 
                     <!-- TAB: PERSONAL -->
                     <div x-ref="tab_personal" class="w-full flex-shrink-0 px-1 pb-4" :inert="activeTab !== 'personal'">
-                        <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden max-w-4xl mx-auto md:ml-0">
-                            <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                        <div
+                            class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden max-w-4xl mx-auto md:ml-0 space-y-6">
+                            <div
+                                class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                <h3
+                                    class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                                     <x-heroicon-o-identification class="w-5 h-5 text-gray-400" /> Información Base
                                 </h3>
                                 @can('editar.informacion')
@@ -185,27 +238,227 @@
                                 @endcan
                             </div>
                             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div><span class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Nombres</span><span class="block text-sm font-bold text-gray-900 uppercase">{{ $agent->first_name }} {{ $agent->second_first_name }}</span></div>
-                                <div><span class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Apellidos</span><span class="block text-sm font-bold text-gray-900 uppercase">{{ $agent->last_name }} {{ $agent->second_last_name }}</span></div>
-                                <div><span class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">DNI</span><span class="block text-sm font-bold text-gray-900">{{ number_format($agent->dni, 0, ',', '.') }}</span></div>
-                                <div><span class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Género</span><span class="block text-sm font-bold text-gray-900 uppercase">{{ is_object($agent->gender) ? $agent->gender->value : $agent->gender }}</span></div>
-                                <div><span class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Teléfono (Celular)</span><span class="block text-sm font-bold text-gray-900">{{ $agent->phone }}</span></div>
-                                <div><span class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Correo Electrónico</span><span class="block text-sm font-bold text-gray-900">{{ $agent->email }}</span></div>
+                                <div><span
+                                        class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Nombres</span><span
+                                        class="block text-sm font-bold text-gray-900 uppercase">{{ $agent->first_name }}
+                                        {{ $agent->second_first_name }}</span></div>
+                                <div><span
+                                        class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Apellidos</span><span
+                                        class="block text-sm font-bold text-gray-900 uppercase">{{ $agent->last_name }}
+                                        {{ $agent->second_last_name }}</span></div>
+                                <div><span
+                                        class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">DNI</span><span
+                                        class="block text-sm font-bold text-gray-900">{{ number_format($agent->dni, 0, ',', '.') }}</span>
+                                </div>
+                                <div><span
+                                        class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Género</span><span
+                                        class="block text-sm font-bold text-gray-900 uppercase">{{ is_object($agent->gender) ? $agent->gender->value : $agent->gender }}</span>
+                                </div>
+                                <div><span
+                                        class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Teléfono
+                                        (Celular)</span><span
+                                        class="block text-sm font-bold text-gray-900">{{ $agent->phone }}</span></div>
+                                <div><span
+                                        class="block text-xs font-secondary text-gray-500 uppercase tracking-wider mb-1">Correo
+                                        Electrónico</span><span
+                                        class="block text-sm font-bold text-gray-900">{{ $agent->email }}</span></div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- TAB: UNIVERSIDAD -->
+                    @if($agent->academicProfile)
+                        @php $acad = $agent->academicProfile; @endphp
+                        <div x-ref="tab_universidad" class="w-full flex-shrink-0 px-1 pb-4"
+                            :inert="activeTab !== 'universidad'">
+                            <div class="max-w-5xl mx-auto space-y-6">
+
+                                <div
+                                    class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden font-secondary">
+                                    <div
+                                        class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <x-heroicon-o-academic-cap class="w-6 h-6 text-brand-cyan" />
+                                            <div>
+                                                <h3 class="text-sm font-bold text-gray-900 uppercase">Perfil Docente UNLP
+                                                </h3>
+                                                <p class="text-[11px] text-gray-500">Cátedra y vinculación académica con la
+                                                    Facultad</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold border ring-1 ring-inset {{ $acad->hsi_status_badge['color'] }}">
+                                                {{ $acad->hsi_status_badge['label'] }}
+                                            </span>
+                                            <button wire:click="openAcademicEditModal"
+                                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold transition-colors border border-brand-cyan px-3 py-1 rounded bg-white shadow-xs">
+                                                Editar Datos UNLP
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                                        <div>
+                                            <span class="block text-gray-400 font-bold uppercase text-[10px]">Mail
+                                                Institucional UNLP</span>
+                                            <span
+                                                class="block font-mono text-sm font-bold text-brand-cyan-dark mt-0.5">{{ $acad->unlp_email }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-gray-400 font-bold uppercase text-[10px]">Mail Personal
+                                                de Respaldo</span>
+                                            <span
+                                                class="block font-mono text-sm font-bold text-gray-800 mt-0.5">{{ $agent->email }}</span>
+                                        </div>
+
+                                        <div>
+                                            <span class="block text-gray-400 font-bold uppercase text-[10px]">Facultad /
+                                                Carrera</span>
+                                            <span
+                                                class="block font-bold text-gray-900 text-sm mt-0.5">{{ $acad->facultad }}</span>
+                                            <span class="block text-gray-600 mt-0.5">{{ $acad->carrera_catedra }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-gray-400 font-bold uppercase text-[10px]">Materia /
+                                                Cargo</span>
+                                            <span
+                                                class="block font-bold text-gray-900 text-sm mt-0.5">{{ $acad->materia }}</span>
+                                            <span class="block text-gray-600 mt-0.5">{{ $acad->cargo_docente }} (Legajo:
+                                                {{ $acad->legajo_unlp ?? 'N/A' }})</span>
+                                        </div>
+
+                                        <div>
+                                            <span class="block text-gray-400 font-bold uppercase text-[10px]">Autoridad
+                                                Firmante Anexo I</span>
+                                            <span
+                                                class="block font-bold text-gray-800 mt-0.5">{{ $acad->autoridad_firmante_nombre }}</span>
+                                            <span
+                                                class="block text-gray-500 text-[11px]">{{ $acad->autoridad_firmante_cargo }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="block text-gray-400 font-bold uppercase text-[10px]">Fecha Límite
+                                                de Vigencia</span>
+                                            <span
+                                                class="block font-bold text-sm mt-0.5 {{ $acad->expires_at->isPast() ? 'text-brand-pink' : 'text-gray-900' }}">
+                                                {{ $acad->expires_at->format('d/m/Y') }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- PANEL OPERATIVO DE CREDENCIALES HSI -->
+                                    <div class="px-6 py-4 bg-gray-50/80 border-t border-gray-200">
+                                        <h4 class="font-bold text-gray-800 uppercase text-[11px] mb-2 font-secondary">Acceso
+                                            a HSI Producción</h4>
+
+                                        @if($acad->hsi_status === 'pendiente_alta')
+                                            <div
+                                                class="p-3 bg-amber-50 border border-amber-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3 font-secondary">
+                                                <p class="text-xs text-amber-800">
+                                                    Pegá el enlace único provisto por HSI para que el docente genere su usuario:
+                                                </p>
+                                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                                    <input type="url" wire:model="academic_hsi_link"
+                                                        placeholder="https://hsi.gba.gov.ar/..."
+                                                        class="rounded-md border-amber-300 text-xs font-mono py-1 w-full sm:w-64">
+
+                                                    <button type="button" wire:click="saveAcademicHsiCredentials"
+                                                        wire:loading.attr="disabled" wire:target="saveAcademicHsiCredentials"
+                                                        class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-md shadow-xs whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <span wire:loading.remove
+                                                            wire:target="saveAcademicHsiCredentials">Activar y Notificar</span>
+                                                        <span wire:loading wire:target="saveAcademicHsiCredentials"
+                                                            class="inline-flex items-center gap-1.5">
+                                                            <svg class="animate-spin h-3 w-3 text-white"
+                                                                xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                                viewBox="0 0 24 24">
+                                                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                                    stroke="currentColor" stroke-width="4"></circle>
+                                                                <path class="opacity-75" fill="currentColor"
+                                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                                </path>
+                                                            </svg>
+                                                            Enviando correo...
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @elseif($acad->hsi_status === 'revocado')
+                                            <div
+                                                class="p-3 bg-red-50 border border-red-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3 font-secondary">
+                                                <p class="text-xs text-red-800">
+                                                    Acceso <strong>REVOCADO</strong>. Pegá el enlace único de reestablecimiento
+                                                    para reactivar:
+                                                </p>
+                                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                                    <input type="url" wire:model="academic_hsi_link"
+                                                        placeholder="https://hsi.gba.gov.ar/..."
+                                                        class="rounded-md border-red-300 text-xs font-mono py-1 w-full sm:w-64">
+
+                                                    <button type="button" wire:click="reactivateAcademicHsiAccess"
+                                                        wire:loading.attr="disabled" wire:target="reactivateAcademicHsiAccess"
+                                                        class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-md shadow-xs whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <span wire:loading.remove
+                                                            wire:target="reactivateAcademicHsiAccess">Reactivar y
+                                                            Notificar</span>
+                                                        <span wire:loading wire:target="reactivateAcademicHsiAccess"
+                                                            class="inline-flex items-center gap-1.5">
+                                                            <svg class="animate-spin h-3 w-3 text-white"
+                                                                xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                                viewBox="0 0 24 24">
+                                                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                                    stroke="currentColor" stroke-width="4"></circle>
+                                                                <path class="opacity-75" fill="currentColor"
+                                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                                </path>
+                                                            </svg>
+                                                            Enviando correo...
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center justify-between font-secondary">
+                                                <div class="text-xs flex items-center gap-2">
+                                                    <span class="text-gray-500">Estado del Acceso:</span>
+                                                    <span
+                                                        class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-md">
+                                                        ACTIVO
+                                                    </span>
+                                                </div>
+
+                                                <div>
+                                                    <button type="button"
+                                                        wire:click="confirmAction('revoke_academic', {{ $acad->id }}, '¿Seguro que querés revocar el acceso a este docente?')"
+                                                        class="text-xs text-brand-pink hover:underline font-bold">
+                                                        Revocar Acceso
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- TAB: PROFESIONAL -->
-                    <div x-ref="tab_profesional" class="w-full flex-shrink-0 px-1 pb-4" :inert="activeTab !== 'profesional'">
+                    <div x-ref="tab_profesional" class="w-full flex-shrink-0 px-1 pb-4"
+                        :inert="activeTab !== 'profesional'">
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <div class="space-y-6">
                                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-                                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                        <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                            <x-heroicon-o-academic-cap class="w-5 h-5 text-brand-cyan" /> Profesiones y Especialidades
+                                    <div
+                                        class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                        <h3
+                                            class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                            <x-heroicon-o-academic-cap class="w-5 h-5 text-brand-cyan" /> Profesiones y
+                                            Especialidades
                                         </h3>
                                         @can('editar.profesiones')
-                                            <button wire:click="$set('showProfModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
+                                            <button wire:click="$set('showProfModal', true)"
+                                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
                                                 + Asignar
                                             </button>
                                         @endcan
@@ -220,12 +473,14 @@
                                                         </p>
                                                         @if($vinculacion->specialty)
                                                             <p class="mt-0.5 text-xs text-gray-500 font-secondary">
-                                                                Especialidad: <span class="font-bold text-gray-700">{{ $vinculacion->specialty->name }}</span>
+                                                                Especialidad: <span
+                                                                    class="font-bold text-gray-700">{{ $vinculacion->specialty->name }}</span>
                                                             </p>
                                                         @endif
                                                     </div>
                                                     @can('editar.profesiones')
-                                                        <button wire:click="confirmAction('profession', {{ $vinculacion->id }}, '¿Seguro que deseas eliminar esta profesión y todas sus matrículas?')"
+                                                        <button
+                                                            wire:click="confirmAction('profession', {{ $vinculacion->id }}, '¿Seguro que deseas eliminar esta profesión y todas sus matrículas?')"
                                                             class="text-gray-400 transition-colors hover:text-brand-pink">
                                                             <x-heroicon-o-trash class="w-4 h-4" />
                                                         </button>
@@ -234,7 +489,9 @@
 
                                                 <div class="bg-gray-50 rounded-lg p-3 border border-gray-100 mt-3">
                                                     <div class="flex justify-between items-center mb-2">
-                                                        <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Matrículas Vinculadas</h4>
+                                                        <h4
+                                                            class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                                            Matrículas Vinculadas</h4>
                                                         @can('editar.profesiones')
                                                             <button wire:click="openRegistrationModal({{ $vinculacion->id }})"
                                                                 class="text-brand-cyan hover:text-brand-cyan-dark text-[10px] font-bold font-secondary transition-colors">
@@ -246,16 +503,21 @@
                                                     @if($vinculacion->registrations->isNotEmpty())
                                                         <div class="space-y-2">
                                                             @foreach($vinculacion->registrations as $reg)
-                                                                <div class="flex items-center justify-between p-2.5 text-sm bg-white border border-gray-200 rounded shadow-sm">
+                                                                <div
+                                                                    class="flex items-center justify-between p-2.5 text-sm bg-white border border-gray-200 rounded shadow-sm">
                                                                     <div>
-                                                                        <div class="font-bold text-brand-blue">{{ $reg->number }}</div>
-                                                                        <div class="text-[10px] text-gray-500 uppercase font-secondary">
-                                                                            {{ is_object($reg->scope) ? $reg->scope->value : $reg->scope }} |
+                                                                        <div class="font-bold text-brand-blue">{{ $reg->number }}
+                                                                        </div>
+                                                                        <div
+                                                                            class="text-[10px] text-gray-500 uppercase font-secondary">
+                                                                            {{ is_object($reg->scope) ? $reg->scope->value : $reg->scope }}
+                                                                            |
                                                                             {{ is_object($reg->type) ? $reg->type->value : $reg->type }}
                                                                         </div>
                                                                     </div>
                                                                     @can('editar.profesiones')
-                                                                        <button wire:click="confirmAction('registration', {{ $reg->id }}, '¿Seguro que deseas borrar esta matrícula?')"
+                                                                        <button
+                                                                            wire:click="confirmAction('registration', {{ $reg->id }}, '¿Seguro que deseas borrar esta matrícula?')"
                                                                             class="text-gray-400 transition-colors hover:text-brand-pink">
                                                                             <x-heroicon-o-trash class="w-4 h-4" />
                                                                         </button>
@@ -264,25 +526,31 @@
                                                             @endforeach
                                                         </div>
                                                     @else
-                                                        <p class="text-[11px] text-gray-400 font-secondary italic mt-1">No hay matrículas registradas.</p>
+                                                        <p class="text-[11px] text-gray-400 font-secondary italic mt-1">No hay
+                                                            matrículas registradas.</p>
                                                     @endif
                                                 </div>
                                             </div>
                                         @empty
-                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">No hay profesiones cargadas.</p>
+                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">No hay
+                                                profesiones cargadas.</p>
                                         @endforelse
                                     </div>
                                 </div>
                             </div>
 
                             <div class="space-y-6">
-                                <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden {{ $agent->residencies->isEmpty() ? 'border-dashed' : '' }}">
-                                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                        <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                <div
+                                    class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden {{ $agent->residencies->isEmpty() ? 'border-dashed' : '' }}">
+                                    <div
+                                        class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                        <h3
+                                            class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                                             <x-heroicon-o-clock class="w-5 h-5 text-gray-400" /> Formación / Residencias
                                         </h3>
                                         @can('editar.profesiones')
-                                            <button wire:click="$set('showResModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
+                                            <button wire:click="$set('showResModal', true)"
+                                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
                                                 + Cargar
                                             </button>
                                         @endcan
@@ -291,18 +559,26 @@
                                         @if($agent->residencies->isNotEmpty())
                                             <div class="space-y-3">
                                                 @foreach($agent->residencies as $residency)
-                                                    <div class="flex items-start justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                                    <div
+                                                        class="flex items-start justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                                                         <div>
-                                                            <p class="text-sm font-bold text-gray-900 uppercase">{{ $residency->program_name }}</p>
+                                                            <p class="text-sm font-bold text-gray-900 uppercase">
+                                                                {{ $residency->program_name }}
+                                                            </p>
                                                             <div class="flex items-center gap-2 mt-1.5">
-                                                                <span class="inline-flex items-center rounded-md bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-bold text-brand-cyan-dark ring-1 ring-inset ring-brand-cyan/20 uppercase">
+                                                                <span
+                                                                    class="inline-flex items-center rounded-md bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-bold text-brand-cyan-dark ring-1 ring-inset ring-brand-cyan/20 uppercase">
                                                                     {{ $residency->current_year }}
                                                                 </span>
-                                                                <span class="text-[11px] text-gray-500 font-secondary">Unidad HSI: <span class="font-bold">{{ $residency->currentUnit->alias ?? $residency->currentUnit->name ?? 'N/A' }}</span></span>
+                                                                <span class="text-[11px] text-gray-500 font-secondary">Unidad
+                                                                    HSI: <span
+                                                                        class="font-bold">{{ $residency->currentUnit->alias ?? $residency->currentUnit->name ?? 'N/A' }}</span></span>
                                                             </div>
                                                         </div>
                                                         @can('editar.profesiones')
-                                                            <button wire:click="confirmAction('residency', {{ $residency->id }}, '¿Seguro que deseas borrar esta residencia?')" class="text-gray-400 transition-colors hover:text-brand-pink">
+                                                            <button
+                                                                wire:click="confirmAction('residency', {{ $residency->id }}, '¿Seguro que deseas borrar esta residencia?')"
+                                                                class="text-gray-400 transition-colors hover:text-brand-pink">
                                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                                             </button>
                                                         @endcan
@@ -312,19 +588,23 @@
                                         @else
                                             <div class="text-center py-4">
                                                 <x-heroicon-o-user-minus class="w-10 h-10 mx-auto text-gray-300 mb-2" />
-                                                <p class="text-sm font-secondary text-gray-500">No se encuentra en ningún programa de residencia activo.</p>
+                                                <p class="text-sm font-secondary text-gray-500">No se encuentra en ningún
+                                                    programa de residencia activo.</p>
                                             </div>
                                         @endif
                                     </div>
                                 </div>
 
                                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-                                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                        <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                    <div
+                                        class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                        <h3
+                                            class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
                                             <x-heroicon-o-star class="w-5 h-5 text-amber-500" /> Jefaturas de Servicio
                                         </h3>
                                         @can('editar.profesiones')
-                                            <button wire:click="$set('showBossModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
+                                            <button wire:click="$set('showBossModal', true)"
+                                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
                                                 + Asignar Jefatura
                                             </button>
                                         @endcan
@@ -333,16 +613,23 @@
                                         @if($agent->serviceBosses->isNotEmpty())
                                             <div class="space-y-3">
                                                 @foreach($agent->serviceBosses as $boss)
-                                                    <div class="flex items-center justify-between p-3 border rounded-lg bg-amber-50 border-amber-100">
+                                                    <div
+                                                        class="flex items-center justify-between p-3 border rounded-lg bg-amber-50 border-amber-100">
                                                         <div class="flex items-center gap-3">
-                                                            <div class="p-2 rounded-md bg-amber-100"><x-heroicon-s-star class="w-5 h-5 text-amber-600" /></div>
+                                                            <div class="p-2 rounded-md bg-amber-100"><x-heroicon-s-star
+                                                                    class="w-5 h-5 text-amber-600" /></div>
                                                             <div>
-                                                                <p class="text-sm font-bold text-gray-900 uppercase">{{ $boss->service->name ?? 'Servicio' }}</p>
-                                                                <p class="mt-0.5 text-[11px] text-amber-700 font-secondary">Jefe de Servicio Designado</p>
+                                                                <p class="text-sm font-bold text-gray-900 uppercase">
+                                                                    {{ $boss->service->name ?? 'Servicio' }}
+                                                                </p>
+                                                                <p class="mt-0.5 text-[11px] text-amber-700 font-secondary">Jefe
+                                                                    de Servicio Designado</p>
                                                             </div>
                                                         </div>
                                                         @can('editar.profesiones')
-                                                            <button wire:click="confirmAction('boss', {{ $boss->id }}, '¿Seguro que deseas revocar esta jefatura?')" class="transition-colors text-amber-600 hover:text-brand-pink">
+                                                            <button
+                                                                wire:click="confirmAction('boss', {{ $boss->id }}, '¿Seguro que deseas revocar esta jefatura?')"
+                                                                class="transition-colors text-amber-600 hover:text-brand-pink">
                                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                                             </button>
                                                         @endcan
@@ -350,7 +637,8 @@
                                                 @endforeach
                                             </div>
                                         @else
-                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">No registra jefaturas.</p>
+                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">No registra
+                                                jefaturas.</p>
                                         @endif
                                     </div>
                                 </div>
@@ -361,13 +649,18 @@
                     <!-- TAB: HSI -->
                     <div x-ref="tab_hsi" class="w-full flex-shrink-0 px-1 pb-4" :inert="activeTab !== 'hsi'">
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            <div class="bg-white shadow-sm rounded-xl border border-brand-cyan/40 overflow-hidden flex flex-col">
-                                <div class="px-5 py-4 border-b border-gray-100 bg-brand-cyan/5 flex justify-between items-center">
-                                    <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                        <x-heroicon-o-shield-check class="w-5 h-5 text-brand-cyan" /> Roles Asignados (HSI)
+                            <div
+                                class="bg-white shadow-sm rounded-xl border border-brand-cyan/40 overflow-hidden flex flex-col">
+                                <div
+                                    class="px-5 py-4 border-b border-gray-100 bg-brand-cyan/5 flex justify-between items-center">
+                                    <h3
+                                        class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                        <x-heroicon-o-shield-check class="w-5 h-5 text-brand-cyan" /> Roles Asignados
+                                        (HSI)
                                     </h3>
                                     @can('editar.accesos')
-                                        <button wire:click="$set('showRoleModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
+                                        <button wire:click="$set('showRoleModal', true)"
+                                            class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
                                             + Asignar Rol
                                         </button>
                                     @endcan
@@ -381,7 +674,9 @@
                                                         <td class="px-5 py-3.5 font-bold text-gray-900">{{ $role->name }}</td>
                                                         <td class="px-5 py-3.5 text-right">
                                                             @can('editar.accesos')
-                                                                <button wire:click="confirmAction('role', {{ $role->id }}, '¿Seguro que deseas quitar este rol del sistema HSI?')" class="text-gray-400 hover:text-brand-pink transition-colors">
+                                                                <button
+                                                                    wire:click="confirmAction('role', {{ $role->id }}, '¿Seguro que deseas quitar este rol del sistema HSI?')"
+                                                                    class="text-gray-400 hover:text-brand-pink transition-colors">
                                                                     <x-heroicon-o-trash class="w-4 h-4" />
                                                                 </button>
                                                             @endcan
@@ -391,22 +686,29 @@
                                             </tbody>
                                         </table>
                                     @else
-                                        <p class="text-xs text-gray-500 font-secondary text-center py-8">No posee roles HSI vinculados.</p>
+                                        <p class="text-xs text-gray-500 font-secondary text-center py-8">No posee roles HSI
+                                            vinculados.</p>
                                     @endif
 
-                                    <div class="mt-auto p-4 border-t flex justify-between items-center {{ str_contains($agent->hsi_access_status['label'] ?? '', 'SIN') ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100' }}">
+                                    <div
+                                        class="mt-auto p-4 border-t flex justify-between items-center {{ str_contains($agent->hsi_access_status['label'] ?? '', 'SIN') ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100' }}">
                                         <div class="flex gap-3 items-center">
-                                            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ring-1 ring-inset font-secondary {{ $agent->hsi_access_status['color'] ?? 'bg-gray-50 text-gray-500' }}">
+                                            <span
+                                                class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ring-1 ring-inset font-secondary {{ $agent->hsi_access_status['color'] ?? 'bg-gray-50 text-gray-500' }}">
                                                 ESTADO: {{ $agent->hsi_access_status['label'] ?? 'DESCONOCIDO' }}
                                             </span>
                                             @if(empty($agent->user_id) && empty($agent->user))
-                                                <p class="text-[11px] text-gray-600 font-secondary">Falta vincular usuario de login.</p>
+                                                <p class="text-[11px] text-gray-600 font-secondary">Falta vincular usuario
+                                                    de login.</p>
                                             @else
-                                                <p class="text-[11px] text-gray-600 font-secondary">User: <strong class="text-brand-cyan-dark">{{ $agent->user ?? 'N/A' }}</strong> (ID: {{ $agent->user_id ?? 'N/A' }})</p>
+                                                <p class="text-[11px] text-gray-600 font-secondary">User: <strong
+                                                        class="text-brand-cyan-dark">{{ $agent->user ?? 'N/A' }}</strong>
+                                                    (ID: {{ $agent->user_id ?? 'N/A' }})</p>
                                             @endif
                                         </div>
                                         @can('editar.accesos')
-                                            <button wire:click="openHsiModal" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors border border-brand-cyan/30 px-3 py-1.5 rounded-md bg-white shadow-sm">
+                                            <button wire:click="openHsiModal"
+                                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors border border-brand-cyan/30 px-3 py-1.5 rounded-md bg-white shadow-sm">
                                                 Vincular Credenciales
                                             </button>
                                         @endcan
@@ -415,14 +717,19 @@
                             </div>
 
                             <div class="space-y-6">
-                                <!-- UNIDADES VINCULADAS AL AGENTE (PERTENENCIA) -->
-                                <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-                                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                        <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                            <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades Jerárquicas (Pertenencia)
+                                <!-- UNIDADES VINCULADAS AL AGENTE -->
+                                <div
+                                    class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+                                    <div
+                                        class="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                        <h3
+                                            class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                            <x-heroicon-o-building-office-2 class="w-5 h-5 text-gray-500" /> Unidades
+                                            Jerárquicas (Pertenencia)
                                         </h3>
                                         @can('editar.accesos')
-                                            <button wire:click="$set('showUnitModal', true)" class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
+                                            <button wire:click="$set('showUnitModal', true)"
+                                                class="text-brand-cyan hover:text-brand-cyan-dark text-xs font-bold font-secondary transition-colors">
                                                 + Vincular Unidad
                                             </button>
                                         @endcan
@@ -431,25 +738,31 @@
                                         @if($agent->hierarchicalUnits->isNotEmpty())
                                             @foreach($agent->hierarchicalUnits as $unit)
                                                 <div class="relative pl-4 mb-4 border-l-2 border-brand-cyan">
-                                                    <div class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-brand-cyan"></div>
+                                                    <div
+                                                        class="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-brand-cyan">
+                                                    </div>
                                                     <div class="flex items-start justify-between">
                                                         <div>
                                                             <p class="text-sm font-bold text-gray-900 uppercase">
                                                                 {{ $unit->alias ?? $unit->name ?? 'Unidad' }}
                                                             </p>
                                                             <div class="flex items-center gap-2 mt-1.5">
-                                                                <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100 rounded-md font-secondary">
+                                                                <span
+                                                                    class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100 rounded-md font-secondary">
                                                                     ID HSI: {{ $unit->id }}
                                                                 </span>
                                                                 @if($unit->pivot->responsible ?? false)
-                                                                    <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase rounded-md bg-amber-50 ring-1 ring-inset ring-amber-600/20 font-secondary">
+                                                                    <span
+                                                                        class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase rounded-md bg-amber-50 ring-1 ring-inset ring-amber-600/20 font-secondary">
                                                                         Responsable
                                                                     </span>
                                                                 @endif
                                                             </div>
                                                         </div>
                                                         @can('editar.accesos')
-                                                            <button wire:click="confirmAction('unit', {{ $unit->id }}, '¿Seguro que deseas desvincular esta unidad jerárquica?')" class="transition-colors text-gray-400 hover:text-brand-pink">
+                                                            <button
+                                                                wire:click="confirmAction('unit', {{ $unit->id }}, '¿Seguro que deseas desvincular esta unidad jerárquica?')"
+                                                                class="transition-colors text-gray-400 hover:text-brand-pink">
                                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                                             </button>
                                                         @endcan
@@ -457,18 +770,23 @@
                                                 </div>
                                             @endforeach
                                         @else
-                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">Sin unidades de pertenencia asignadas.</p>
+                                            <p class="text-xs text-gray-500 font-secondary text-center py-4">Sin unidades de
+                                                pertenencia asignadas.</p>
                                         @endif
                                     </div>
                                 </div>
 
-                                <!-- ALCANCE ADMINISTRATIVO (HABILITACIÓN DE AGENDAS) -->
+                                <!-- ALCANCE ADMINISTRATIVO (AGENDAS) -->
                                 @php $isUnitAdmin = $agent->isAdministrativeOfHierarchicalUnits(); @endphp
-                                <div class="bg-white shadow-sm rounded-xl border {{ $isUnitAdmin ? 'border-brand-blue/30' : 'border-gray-200 opacity-70' }} overflow-hidden flex flex-col">
-                                    <div class="px-5 py-4 border-b border-gray-100 {{ $isUnitAdmin ? 'bg-blue-50/40' : 'bg-gray-50' }} flex justify-between items-center">
+                                <div
+                                    class="bg-white shadow-sm rounded-xl border {{ $isUnitAdmin ? 'border-brand-blue/30' : 'border-gray-200 opacity-70' }} overflow-hidden flex flex-col">
+                                    <div
+                                        class="px-5 py-4 border-b border-gray-100 {{ $isUnitAdmin ? 'bg-blue-50/40' : 'bg-gray-50' }} flex justify-between items-center">
                                         <div>
-                                            <h3 class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
-                                                <x-heroicon-o-calendar-days class="w-5 h-5 {{ $isUnitAdmin ? 'text-brand-blue' : 'text-gray-400' }}" />
+                                            <h3
+                                                class="text-sm font-bold text-gray-900 uppercase font-secondary flex items-center gap-2">
+                                                <x-heroicon-o-calendar-days
+                                                    class="w-5 h-5 {{ $isUnitAdmin ? 'text-brand-blue' : 'text-gray-400' }}" />
                                                 Agendas / Alcance Administrativo
                                             </h3>
                                             <p class="text-[11px] text-gray-500 font-secondary mt-0.5">
@@ -478,7 +796,8 @@
 
                                         @if($isUnitAdmin)
                                             @can('editar.accesos')
-                                                <button wire:click="openAccessModal" class="text-brand-blue hover:text-blue-700 text-xs font-bold font-secondary transition-colors border border-blue-200 bg-white px-3 py-1 rounded shadow-sm">
+                                                <button wire:click="openAccessModal"
+                                                    class="text-brand-blue hover:text-blue-700 text-xs font-bold font-secondary transition-colors border border-blue-200 bg-white px-3 py-1 rounded shadow-sm">
                                                     Gestionar Accesos ({{ $agent->accessibleHierarchicalUnits->count() }})
                                                 </button>
                                             @endcan
@@ -486,33 +805,33 @@
                                     </div>
 
                                     <div class="p-5 flex-1">
-                                        @if(! $isUnitAdmin)
-                                            <div class="p-4 bg-amber-50/60 rounded-lg border border-amber-200/60 flex items-start gap-3">
-                                                <x-heroicon-o-exclamation-circle class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                        @if(!$isUnitAdmin)
+                                            <div
+                                                class="p-4 bg-amber-50/60 rounded-lg border border-amber-200/60 flex items-start gap-3">
+                                                <x-heroicon-o-exclamation-circle
+                                                    class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                                 <div class="text-xs font-secondary text-amber-800">
-                                                    <strong>Función Inactiva:</strong> El agente no posee asignado el rol <em>ADMINISTRATIVO DE UNIDADES JERÁRQUICAS</em>.
-                                                    @if($agent->accessibleHierarchicalUnits->isNotEmpty())
-                                                        <span class="block mt-1 text-gray-600">Conserva <strong>{{ $agent->accessibleHierarchicalUnits->count() }}</strong> asignaciones previas registradas pero deshabilitadas operativamente.</span>
-                                                    @endif
+                                                    <strong>Función Inactiva:</strong> El agente no posee asignado el rol
+                                                    <em>ADMINISTRATIVO DE UNIDADES JERÁRQUICAS</em>.
                                                 </div>
                                             </div>
                                         @elseif($agent->accessibleHierarchicalUnits->isEmpty())
                                             <div class="text-center py-6">
                                                 <x-heroicon-o-calendar class="w-8 h-8 mx-auto text-gray-300 mb-2" />
-                                                <p class="text-xs text-gray-500 font-secondary">Sin agendas asignadas. Presioná en <strong>Gestionar Accesos</strong> para habilitar unidades.</p>
+                                                <p class="text-xs text-gray-500 font-secondary">Sin agendas asignadas.</p>
                                             </div>
                                         @else
-                                            <div class="max-h-72 overflow-y-auto space-y-2 pr-1 col-scrollbar">
+                                            <div class="max-h-72 overflow-y-auto space-y-2 pr-1">
                                                 @foreach($agent->accessibleHierarchicalUnits as $accUnit)
-                                                    <div class="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-secondary">
+                                                    <div
+                                                        class="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-secondary">
                                                         <div class="flex items-center gap-2 truncate">
                                                             <span class="w-2 h-2 rounded-full bg-brand-blue shrink-0"></span>
-                                                            <span class="font-bold text-gray-800 truncate">{{ $accUnit->alias }}</span>
-                                                            <span class="text-[10px] text-gray-400 font-mono">#{{ $accUnit->id }}</span>
+                                                            <span
+                                                                class="font-bold text-gray-800 truncate">{{ $accUnit->alias }}</span>
                                                         </div>
                                                         @can('editar.accesos')
                                                             <button wire:click="revokeAccessUnit({{ $accUnit->id }})"
-                                                                title="Quitar acceso a esta agenda"
                                                                 class="text-gray-400 hover:text-brand-pink transition-colors ml-2">
                                                                 <x-heroicon-o-x-mark class="w-4 h-4" />
                                                             </button>
@@ -528,18 +847,23 @@
                     </div>
 
                     <!-- TAB: DOCUMENTOS -->
-                    <div x-ref="tab_documentos" class="w-full flex-shrink-0 px-1 pb-4" :inert="activeTab !== 'documentos'">
+                    <div x-ref="tab_documentos" class="w-full flex-shrink-0 px-1 pb-4"
+                        :inert="activeTab !== 'documentos'">
                         <div class="max-w-4xl mx-auto">
                             <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden mb-6">
-                                <div class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                <div
+                                    class="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                     <div>
                                         <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                                            <x-heroicon-o-folder-open class="w-6 h-6 text-brand-blue" /> Matriz Requerida para HSI
+                                            <x-heroicon-o-folder-open class="w-6 h-6 text-brand-blue" /> Matriz
+                                            Requerida para HSI
                                         </h3>
-                                        <p class="text-xs font-secondary text-gray-500 mt-1">Exigidos obligatoriamente según los Roles que tiene asignados.</p>
+                                        <p class="text-xs font-secondary text-gray-500 mt-1">Exigidos obligatoriamente
+                                            según los Roles asignados.</p>
                                     </div>
                                     @can('editar.documentos')
-                                        <button wire:click="$set('showDocModal', true)" class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm font-secondary flex items-center gap-1">
+                                        <button wire:click="$set('showDocModal', true)"
+                                            class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm font-secondary flex items-center gap-1">
                                             <x-heroicon-o-cloud-arrow-up class="w-4 h-4" /> Subir PDF
                                         </button>
                                     @endcan
@@ -547,29 +871,35 @@
 
                                 <div class="divide-y divide-gray-100">
                                     @foreach($missingMandatoryTypes as $type)
-                                        <div class="p-5 flex items-center justify-between bg-red-50/30 border-l-4 border-brand-pink">
+                                        <div
+                                            class="p-5 flex items-center justify-between bg-red-50/30 border-l-4 border-brand-pink">
                                             <div class="flex items-start gap-4">
-                                                <div class="bg-red-100 p-2 rounded-lg shrink-0"><x-heroicon-o-exclamation-triangle class="w-6 h-6 text-brand-pink" /></div>
+                                                <div class="bg-red-100 p-2 rounded-lg shrink-0">
+                                                    <x-heroicon-o-exclamation-triangle class="w-6 h-6 text-brand-pink" />
+                                                </div>
                                                 <div>
-                                                    <p class="text-sm font-bold text-brand-pink uppercase">{{ $type->name }}</p>
-                                                    <p class="text-[11px] text-gray-500 font-secondary mt-1">Falta digitalizar archivo.</p>
+                                                    <p class="text-sm font-bold text-brand-pink uppercase">{{ $type->name }}
+                                                    </p>
+                                                    <p class="text-[11px] text-gray-500 font-secondary mt-1">Falta
+                                                        digitalizar archivo.</p>
                                                 </div>
                                             </div>
                                         </div>
                                     @endforeach
 
                                     @foreach($uploadedMandatoryDocs as $doc)
-                                        <div class="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                        <div
+                                            class="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors">
                                             <div class="flex items-start gap-4">
-                                                <div class="bg-green-100 p-2 rounded-lg shrink-0"><x-heroicon-s-check-circle class="w-6 h-6 text-green-600" /></div>
+                                                <div class="bg-green-100 p-2 rounded-lg shrink-0"><x-heroicon-s-check-circle
+                                                        class="w-6 h-6 text-green-600" /></div>
                                                 <div>
                                                     <p class="text-sm font-bold text-gray-900 uppercase">
                                                         {{ $doc->type->name ?? 'Documento' }}
                                                     </p>
-                                                    @if($doc->other_type)
-                                                        <p class="text-[11px] text-gray-500 font-secondary mt-0.5">Tipo declarado: <span class="font-bold text-gray-700">{{ $doc->other_type }}</span></p>
-                                                    @endif
-                                                    <p class="text-[11px] text-gray-500 font-secondary mt-1">Verificado. Subido el {{ $doc->created_at->format('d/m/Y') }}</p>
+                                                    <p class="text-[11px] text-gray-500 font-secondary mt-1">Verificado el
+                                                        {{ $doc->created_at->format('d/m/Y') }}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-3">
@@ -578,51 +908,17 @@
                                                     <x-heroicon-o-arrow-down-tray class="w-4 h-4" /> Bajar
                                                 </a>
                                                 @can('editar.documentos')
-                                                    <button wire:click="confirmAction('document', {{ $doc->id }}, '¿Seguro que deseas eliminar este documento comprobante?')" class="text-gray-400 hover:text-brand-pink">
+                                                    <button
+                                                        wire:click="confirmAction('document', {{ $doc->id }}, '¿Seguro que deseas eliminar este documento comprobante?')"
+                                                        class="text-gray-400 hover:text-brand-pink">
                                                         <x-heroicon-o-trash class="w-4 h-4" />
                                                     </button>
                                                 @endcan
                                             </div>
                                         </div>
                                     @endforeach
-
-                                    @if($missingMandatoryTypes->isEmpty() && $uploadedMandatoryDocs->isEmpty())
-                                        <div class="p-8 text-center text-gray-500 font-secondary text-sm">No posee roles que exijan documentos.</div>
-                                    @endif
                                 </div>
                             </div>
-
-                            @if($historicalDocs->isNotEmpty())
-                                <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-                                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-                                        <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2"><x-heroicon-o-archive-box class="w-5 h-5 text-gray-400" /> Histórico / Otros Archivos</h3>
-                                        <p class="text-[11px] text-gray-500 font-secondary mt-1">Archivos del legajo que no interfieren con la validación de interoperabilidad de HSI actual.</p>
-                                    </div>
-                                    <div class="divide-y divide-gray-100">
-                                        @foreach($historicalDocs as $doc)
-                                            <div class="p-4 flex items-center justify-between hover:bg-gray-50">
-                                                <div class="flex items-start gap-3">
-                                                    <div class="bg-gray-100 p-1.5 rounded-md text-gray-500 shrink-0"><x-heroicon-o-document class="w-5 h-5" /></div>
-                                                    <div>
-                                                        <p class="text-sm font-bold text-gray-700 uppercase">
-                                                            {{ $doc->type->name ?? $doc->other_type ?? 'Documento Extra' }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div class="flex items-center gap-3">
-                                                    <a href="{{ Storage::url($doc->path) }}" target="_blank"
-                                                        class="text-gray-500 hover:text-brand-cyan text-xs font-bold font-secondary flex items-center gap-1">
-                                                        <x-heroicon-o-eye class="w-4 h-4" /> Ver
-                                                    </a>
-                                                    <button wire:click="confirmAction('document', {{ $doc->id }}, '¿Seguro que deseas eliminar este archivo de su legajo histórico?')" class="text-gray-400 hover:text-brand-pink">
-                                                        <x-heroicon-o-trash class="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
                         </div>
                     </div>
 
@@ -631,43 +927,45 @@
                         <div class="max-w-6xl mx-auto">
                             @if($notes->isNotEmpty())
                                 <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-                                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                    <div class="px-6 py-4 bg-gray-50 flex justify-between items-center">
                                         <div>
                                             <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">
                                                 <x-heroicon-o-document-text class="w-5 h-5 text-gray-400" />
                                                 Notas del Agente
                                             </h3>
-                                            <p class="text-[11px] text-gray-500 font-secondary mt-1">
-                                                Registro de observaciones e información adicional.
-                                            </p>
                                         </div>
 
-                                        <button wire:click="createNote" class="text-xs font-bold bg-brand-cyan text-white px-3 py-1.5 rounded-md hover:bg-cyan-600 transition-colors flex items-center gap-1 shadow-sm">
+                                        <button wire:click="createNote"
+                                            class="text-xs font-bold bg-brand-cyan text-white px-3 py-1.5 rounded-md hover:bg-cyan-600 transition-colors flex items-center gap-1 shadow-sm">
                                             <x-heroicon-o-plus class="w-4 h-4" /> Nueva Nota
                                         </button>
                                     </div>
 
                                     <div class="divide-y divide-gray-100">
                                         @foreach($notes as $note)
-                                            <div class="p-4 flex items-start justify-between hover:bg-gray-50 transition-colors">
+                                            <div
+                                                class="p-4 flex items-start justify-between hover:bg-gray-50 transition-colors">
                                                 <div class="flex items-start gap-3 w-full pr-4">
                                                     <div class="bg-amber-50 p-1.5 rounded-md text-amber-500 shrink-0">
                                                         <x-heroicon-o-chat-bubble-bottom-center-text class="w-5 h-5" />
                                                     </div>
                                                     <div class="flex-1">
-                                                        <h4 class="text-sm font-bold text-gray-700 uppercase">{{ $note->title }}</h4>
-                                                        <p class="text-xs text-gray-600 mt-1 line-clamp-2 leading-relaxed">{{ $note->content }}</p>
-                                                        <span class="text-[10px] text-gray-400 font-secondary mt-2 block">
-                                                            Registrada el: {{ $note->created_at ? $note->created_at->format('d/m/Y H:i') : 'Sin fecha' }}
-                                                        </span>
+                                                        <h4 class="text-sm font-bold text-gray-700 uppercase">{{ $note->title }}
+                                                        </h4>
+                                                        <p class="text-xs text-gray-600 mt-1 leading-relaxed">
+                                                            {{ $note->content }}
+                                                        </p>
                                                     </div>
                                                 </div>
 
                                                 <div class="flex items-center gap-3 shrink-0 mt-1">
-                                                    <button wire:click="editNote({{ $note->id }})" class="text-gray-500 hover:text-brand-cyan text-xs font-bold font-secondary flex items-center gap-1">
+                                                    <button wire:click="editNote({{ $note->id }})"
+                                                        class="text-gray-500 hover:text-brand-cyan text-xs font-bold font-secondary flex items-center gap-1">
                                                         <x-heroicon-o-pencil class="w-4 h-4" /> Editar
                                                     </button>
-                                                    <button wire:click="confirmAction('note', {{ $note->id }}, '¿Estás seguro de que querés borrar permanentemente esta nota?')" class="text-gray-400 hover:text-brand-pink">
+                                                    <button
+                                                        wire:click="confirmAction('note', {{ $note->id }}, '¿Estás seguro de que querés borrar esta nota?')"
+                                                        class="text-gray-400 hover:text-brand-pink">
                                                         <x-heroicon-o-trash class="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -679,7 +977,8 @@
                                 <div class="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
                                     <x-heroicon-o-document-text class="w-8 h-8 text-gray-400 mx-auto mb-2" />
                                     <p class="text-sm text-gray-500">No hay notas registradas para este agente.</p>
-                                    <button wire:click="createNote" class="mt-3 text-xs font-bold text-brand-cyan hover:underline">
+                                    <button wire:click="createNote"
+                                        class="mt-3 text-xs font-bold text-brand-cyan hover:underline">
                                         + Agregar la primera nota
                                     </button>
                                 </div>
@@ -693,57 +992,44 @@
 
     </div>
 
-    <!-- ZONA DE MODALES FUERA DEL FLUJO DE LAS PESTAÑAS -->
+    <!-- ========================================================================= -->
+    <!-- MODALES FUERA DEL FLUJO PRINCIPAL DE PESTAÑAS -->
+    <!-- ========================================================================= -->
 
-    <!-- MODAL DE CONFIRMACIÓN (REEMPLAZA AL DE HTML NATIVO) -->
+    <!-- MODAL CONFIRMACIÓN GENÉRICO -->
     <div x-data="{ show: @entangle('showConfirmModal') }" x-show="show" class="fixed inset-0 z-[200] overflow-y-auto"
         x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true"
+            <div x-show="show" class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm"
                 @click="show = false"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div x-show="show" x-transition:enter="ease-out duration-300"
-                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="show"
                 class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6 border-t-4 border-brand-pink">
-
                 <div class="sm:flex sm:items-start">
-                    <div class="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                    <div
+                        class="flex items-center justify-center flex-shrink-0 w-12 h-12 mx-auto bg-red-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
                         <x-heroicon-o-exclamation-triangle class="w-6 h-6 text-brand-pink" />
                     </div>
                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                        <h3 class="text-lg font-bold leading-6 text-gray-900 font-secondary uppercase tracking-wide" id="modal-title">
-                            Confirmar Acción
-                        </h3>
+                        <h3 class="text-lg font-bold text-gray-900 font-secondary uppercase" id="modal-title">Confirmar
+                            Acción</h3>
                         <div class="mt-2">
                             <p class="text-sm text-gray-500 font-secondary">{{ $confirmingMessage }}</p>
                         </div>
                     </div>
                 </div>
-
                 <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                     <button type="button" wire:click="executeAction"
-                        class="inline-flex justify-center w-full px-4 py-2 text-sm font-bold text-white transition-colors bg-brand-pink border border-transparent rounded-md shadow-sm hover:bg-red-600 focus:outline-none sm:ml-3 sm:w-auto font-secondary uppercase">
-                        Sí, Confirmar
-                    </button>
+                        class="inline-flex justify-center w-full px-4 py-2 text-sm font-bold text-white bg-brand-pink rounded-md hover:bg-red-600 sm:ml-3 sm:w-auto font-secondary uppercase">Sí,
+                        Confirmar</button>
                     <button type="button" wire:click="$set('showConfirmModal', false)"
-                        class="inline-flex justify-center w-full px-4 py-2 mt-3 text-sm font-bold text-gray-700 transition-colors bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto font-secondary uppercase">
-                        Cancelar
-                    </button>
+                        class="inline-flex justify-center w-full px-4 py-2 mt-3 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 sm:mt-0 sm:w-auto font-secondary uppercase">Cancelar</button>
                 </div>
             </div>
         </div>
     </div>
 
-
+    <!-- MODAL EDICIÓN DATOS AGENTE -->
     @if($showEditModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -759,13 +1045,15 @@
 
                         <div class="bg-gray-50 px-6 py-5">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-
                                 <div
                                     class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-gray-200">
                                     <div>
-                                        <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Estado del usuario *</label>
+                                        <label
+                                            class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Estado
+                                            *</label>
                                         <select wire:model="edit_status"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase" required>
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase"
+                                            required>
                                             @foreach($statuses as $status)
                                                 <option value="{{ $status->value }}">{{ $status->name }}</option>
                                             @endforeach
@@ -777,16 +1065,23 @@
                                     </div>
                                 </div>
 
-                                <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-gray-200">
+                                <div
+                                    class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-gray-200">
                                     <div>
-                                        <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">DNI *</label>
+                                        <label
+                                            class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">DNI
+                                            *</label>
                                         <input type="number" wire:model="edit_dni"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                            required>
                                     </div>
                                     <div>
-                                        <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Género Registrado *</label>
+                                        <label
+                                            class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Género
+                                            *</label>
                                         <select wire:model="edit_gender"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase" required>
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase"
+                                            required>
                                             <option value="">Seleccione...</option>
                                             @foreach($genders as $gender)
                                                 <option value="{{ $gender->value }}">{{ $gender->name }}</option>
@@ -796,37 +1091,54 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Primer Nombre *</label>
+                                    <label
+                                        class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Primer
+                                        Nombre *</label>
                                     <input type="text" wire:model="edit_first_name"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase" required>
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase"
+                                        required>
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Segundo Nombre</label>
+                                    <label
+                                        class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Segundo
+                                        Nombre</label>
                                     <input type="text" wire:model="edit_second_first_name"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase">
                                 </div>
 
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Primer Apellido *</label>
+                                    <label
+                                        class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Primer
+                                        Apellido *</label>
                                     <input type="text" wire:model="edit_last_name"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase" required>
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase"
+                                        required>
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Segundo Apellido</label>
+                                    <label
+                                        class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Segundo
+                                        Apellido</label>
                                     <input type="text" wire:model="edit_second_last_name"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary uppercase">
                                 </div>
 
-                                <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                                <div
+                                    class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                                     <div>
-                                        <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Teléfono de Contacto *</label>
+                                        <label
+                                            class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Teléfono
+                                            *</label>
                                         <input type="text" wire:model="edit_phone"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                            required>
                                     </div>
                                     <div>
-                                        <label class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Correo Electrónico *</label>
+                                        <label
+                                            class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Correo
+                                            Electrónico *</label>
                                         <input type="email" wire:model="edit_email"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary lowercase" required>
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary lowercase"
+                                            required>
                                     </div>
                                 </div>
                             </div>
@@ -836,7 +1148,8 @@
                             <button type="button" wire:click="$set('showEditModal', false)"
                                 class="px-4 py-2 text-sm font-bold bg-gray-100 rounded-md">Cancelar</button>
                             <button type="submit"
-                                class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md">Actualizar Datos</button>
+                                class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md">Actualizar
+                                Datos</button>
                         </div>
                     </form>
                 </div>
@@ -844,31 +1157,81 @@
         </div>
     @endif
 
+    <!-- MODAL DE CONFIRMACIÓN GENÉRICO -->
+    @if($showConfirmModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-xs transition-opacity">
+            <div
+                class="bg-white rounded-xl shadow-xl border border-gray-100 max-w-sm w-full mx-4 p-5 font-secondary animate-in fade-in zoom-in-95 duration-150">
+                <div class="flex items-center gap-3 text-amber-600 mb-3">
+                    <div class="p-2 bg-amber-100 rounded-full">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-gray-900 text-sm">Confirmación requerida</h3>
+                </div>
+
+                <p class="text-xs text-gray-600 mb-5 leading-relaxed">
+                    {{ $confirmingMessage }}
+                </p>
+
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" wire:click="$set('showConfirmModal', false)"
+                        class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+
+                    <button type="button" wire:click="executeAction" wire:loading.attr="disabled"
+                        class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5">
+                        <span wire:loading.remove wire:target="executeAction">Confirmar</span>
+                        <span wire:loading wire:target="executeAction" class="inline-flex items-center gap-1">
+                            <svg class="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                                </circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Procesando...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- MODAL VINCULAR CREDENCIALES HSI -->
     @if($showHsiModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showHsiModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
                     <form wire:submit="saveHsiData">
                         <div class="px-6 py-5 border-b border-gray-200">
-                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2"><x-heroicon-o-link class="w-5 h-5 text-brand-cyan" /> Vincular Credenciales HSI</h3>
-                            <p class="text-xs text-gray-500 font-secondary mt-1">Atención: Estos datos son identificadores técnicos de interoperabilidad con el sistema HSI.</p>
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2"><x-heroicon-o-link
+                                    class="w-5 h-5 text-brand-cyan" /> Vincular Credenciales HSI</h3>
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Person ID (ID de Persona HSI)</label>
+                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Person ID (ID
+                                    HSI)</label>
                                 <input type="number" wire:model="hsi_person_id" placeholder="Ej: 12345"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">User ID HSI</label>
+                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">User ID
+                                        HSI</label>
                                     <input type="number" wire:model="hsi_user_id" placeholder="Ej: 123"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Username HSI</label>
+                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Username
+                                        HSI</label>
                                     <input type="text" wire:model="hsi_user" placeholder="Ej: san.martin"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                                 </div>
@@ -878,7 +1241,8 @@
                             <button type="button" wire:click="$set('showHsiModal', false)"
                                 class="px-4 py-2 text-sm font-bold bg-gray-100 rounded-md">Cancelar</button>
                             <button type="submit"
-                                class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md">Guardar Credenciales</button>
+                                class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md">Guardar
+                                Credenciales</button>
                         </div>
                     </form>
                 </div>
@@ -886,12 +1250,14 @@
         </div>
     @endif
 
+    <!-- MODAL PROFESIÓN -->
     @if($showProfModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showProfModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
                     <form wire:submit="saveProfession">
                         <div class="px-6 py-5 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900">Asignar Profesión</h3>
@@ -900,7 +1266,6 @@
                             <x-searchable-select wire:model="prof_profession_id" label="Ocupación/Profesión *"
                                 placeholder="Buscar ocupación..." defaultText="Seleccione..."
                                 :options="$occupations->map(fn($occ) => ['id' => $occ->id, 'name' => $occ->name])->values()->toArray()" />
-
                             <x-searchable-select wire:model="prof_specialty_id" label="Especialidad (Opcional)"
                                 placeholder="Buscar especialidad..." defaultText="Ninguna..."
                                 :options="$specialities->map(fn($spec) => ['id' => $spec->id, 'name' => $spec->name])->values()->toArray()" />
@@ -917,26 +1282,32 @@
         </div>
     @endif
 
+    <!-- MODAL MATRÍCULA -->
     @if($showRegModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showRegModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
                     <form wire:submit="saveRegistration">
                         <div class="px-6 py-5 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900">Cargar Matrícula</h3>
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Número de Matrícula *</label>
+                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Número de
+                                    Matrícula *</label>
                                 <input type="text" wire:model="reg_number"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                    required>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Ámbito (Scope) *</label>
+                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Ámbito (Scope)
+                                    *</label>
                                 <select wire:model="reg_scope"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                    required>
                                     <option value="">Seleccione...</option>
                                     @foreach($registrationScopes as $scope)
                                         <option value="{{ $scope->value }}">{{ strtoupper($scope->value) }}</option>
@@ -946,7 +1317,8 @@
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Tipo *</label>
                                 <select wire:model="reg_type"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                    required>
                                     <option value="">Seleccione...</option>
                                     @foreach($registrationTypes as $type)
                                         <option value="{{ $type->value }}">{{ strtoupper($type->value) }}</option>
@@ -966,30 +1338,37 @@
         </div>
     @endif
 
+    <!-- MODAL RESIDENCIA -->
     @if($showResModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showResModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
                     <form wire:submit="saveResidency">
                         <div class="px-6 py-5 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900">Cargar Residencia</h3>
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Programa Académico *</label>
+                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Programa
+                                    Académico *</label>
                                 <input type="text" wire:model="res_program_name" placeholder="Ej: Tocoginecología"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                    required>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Año Actual *</label>
+                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Año Actual
+                                        *</label>
                                     <input type="text" wire:model="res_current_year" placeholder="Ej: R1"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary" required>
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary"
+                                        required>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Fecha de Egreso</label>
+                                    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Fecha
+                                        Egreso</label>
                                     <input type="date" wire:model="res_end_date"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
                                 </div>
@@ -1012,22 +1391,22 @@
         </div>
     @endif
 
+    <!-- MODAL JEFATURA -->
     @if($showBossModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showBossModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border-t-4 border-amber-500">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border-t-4 border-amber-500">
                     <form wire:submit="saveServiceBoss">
                         <div class="px-6 py-5 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900">Asignar Jefatura</h3>
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
-                            <div>
-                                <x-searchable-select wire:model="boss_service_id" label="Servicio a Cargo *"
-                                    placeholder="Buscar servicio..." defaultText="Seleccione..."
-                                    :options="$services->map(fn($serv) => ['id' => $serv->id, 'name' => $serv->name])->values()->toArray()" />
-                            </div>
+                            <x-searchable-select wire:model="boss_service_id" label="Servicio a Cargo *"
+                                placeholder="Buscar servicio..." defaultText="Seleccione..."
+                                :options="$services->map(fn($serv) => ['id' => $serv->id, 'name' => $serv->name])->values()->toArray()" />
                         </div>
                         <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
                             <button type="button" wire:click="$set('showBossModal', false)"
@@ -1041,12 +1420,14 @@
         </div>
     @endif
 
+    <!-- MODAL ROL HSI -->
     @if($showRoleModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showRoleModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border-t-4 border-brand-cyan">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full border-t-4 border-brand-cyan">
                     <form wire:submit="saveRole">
                         <div class="px-6 py-5 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900">Asignar Rol HSI</h3>
@@ -1067,26 +1448,26 @@
         </div>
     @endif
 
+    <!-- MODAL UNIDAD JERÁRQUICA -->
     @if($showUnitModal)
         <div class="fixed inset-0 z-50 overflow-y-auto">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showUnitModal', false)"></div><span
                     class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
                     <form wire:submit="saveUnit">
                         <div class="px-6 py-5 border-b border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900">Vincular a Unidad Jerárquica</h3>
                         </div>
                         <div class="p-6 space-y-4 bg-gray-50">
-                            <div>
-                                <x-searchable-select wire:model="unit_id" label="Unidad HSI *"
-                                    placeholder="Buscar unidad..." defaultText="Seleccione..."
-                                    :options="$hierarchicalUnits->map(fn($unit) => ['id' => $unit->id, 'name' => ($unit->alias ?? $unit->name) . ' (ID: ' . $unit->id . ')'])->values()->toArray()" />
-                            </div>
+                            <x-searchable-select wire:model="unit_id" label="Unidad HSI *" placeholder="Buscar unidad..."
+                                defaultText="Seleccione..." :options="$hierarchicalUnits->map(fn($unit) => ['id' => $unit->id, 'name' => ($unit->alias ?? $unit->name) . ' (ID: ' . $unit->id . ')'])->values()->toArray()" />
                             <div class="flex items-center mt-4">
                                 <input type="checkbox" wire:model="unit_responsible" id="unit_resp"
                                     class="h-4 w-4 text-brand-cyan focus:ring-brand-cyan border-gray-300 rounded">
-                                <label for="unit_resp" class="ml-2 block text-sm text-gray-900 font-secondary">Es Responsable de la Unidad</label>
+                                <label for="unit_resp" class="ml-2 block text-sm text-gray-900 font-secondary">Es
+                                    Responsable de la Unidad</label>
                             </div>
                         </div>
                         <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
@@ -1101,135 +1482,298 @@
         </div>
     @endif
 
+    <!-- MODAL DOCUMENTO -->
     @if($showDocModal)
-    <div class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showDocModal', false)"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">​</span>
-
-            <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
-                <!-- Usamos prevent para evitar recargas nativas accidentales del navegador -->
-                <form wire:submit.prevent="saveDocument">
-                    <div class="px-6 py-5 border-b border-gray-200">
-                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            <x-heroicon-o-cloud-arrow-up class="w-5 h-5 text-brand-cyan" /> Subir Documento
-                        </h3>
-                    </div>
-
-                    <div class="p-6 space-y-4 bg-gray-50">
-                        <!-- SOLUCIÓN 1: Envolvemos el componente dinámico en un div con wire:ignore para que Livewire no lo rompa al re-renderizar -->
-                        <div wire:ignore>
-                            <x-searchable-select wire:model="doc_type_id" label="Tipo de Documento *"
-                                placeholder="Buscar documento..." defaultText="Seleccione..."
-                                :options="$documentTypes->map(fn($type) => ['id' => $type->id, 'name' => $type->name])->values()->toArray()" />
+        <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-75" wire:click="$set('showDocModal', false)"></div><span
+                    class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                <div
+                    class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border-t-4 border-brand-cyan">
+                    <form wire:submit.prevent="saveDocument">
+                        <div class="px-6 py-5 border-b border-gray-200">
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2"><x-heroicon-o-cloud-arrow-up
+                                    class="w-5 h-5 text-brand-cyan" /> Subir Documento</h3>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Descripción Extra (Opcional)</label>
-                            <input type="text" wire:model="doc_other_type"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
+                        <div class="p-6 space-y-4 bg-gray-50">
+                            <div wire:ignore>
+                                <x-searchable-select wire:model="doc_type_id" label="Tipo de Documento *"
+                                    placeholder="Buscar documento..." defaultText="Seleccione..."
+                                    :options="$documentTypes->map(fn($type) => ['id' => $type->id, 'name' => $type->name])->values()->toArray()" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Descripción
+                                    Extra (Opcional)</label>
+                                <input type="text" wire:model="doc_other_type"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan sm:text-sm font-secondary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Archivo
+                                    (PDF/IMG, Max 5MB) *</label>
+                                <input type="file" wire:model="doc_file" id="doc_file_upload" wire:key="upload-file-input"
+                                    class="mt-1 block w-full text-sm text-gray-500 font-secondary file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-cyan/10 file:text-brand-cyan-dark hover:file:bg-brand-cyan/20">
+                                <div wire:loading wire:target="doc_file"
+                                    class="text-xs text-brand-cyan font-bold mt-2 animate-pulse">Cargando archivo al
+                                    servidor temporal...</div>
+                                @if($doc_file && !$errors->has('doc_file'))
+                                    <div class="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Archivo listo para guardar.
+                                    </div>
+                                @endif
+                                @error('doc_file') <span
+                                class="text-xs text-brand-pink font-bold mt-1 block">{{ $message }}</span> @enderror
+                            </div>
                         </div>
-
-                        <div>
-    <label class="block text-xs font-bold text-gray-700 font-secondary uppercase">Archivo (PDF/IMG, Max 5MB) *</label>
-
-    <!-- 1. QUITAR el atributo 'required' nativo -->
-    <input type="file" wire:model="doc_file" id="doc_file_upload" wire:key="upload-file-input"
-        class="mt-1 block w-full text-sm text-gray-500 font-secondary file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-cyan/10 file:text-brand-cyan-dark hover:file:bg-brand-cyan/20">
-
-    <!-- 2. Spinner de carga -->
-    <div wire:loading wire:target="doc_file" class="text-xs text-brand-cyan font-bold mt-2 animate-pulse">
-        Cargando archivo al servidor temporal...
-    </div>
-
-    <!-- 3. NUEVO: Feedback visual cuando el archivo ya se cargó a la variable -->
-    @if($doc_file && !$errors->has('doc_file'))
-        <div class="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Archivo listo para guardar.
+                        <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
+                            <button type="button" wire:click="$set('showDocModal', false)"
+                                class="px-4 py-2 text-sm font-bold bg-gray-100 rounded-md">Cancelar</button>
+                            <button type="submit" wire:loading.attr="disabled" wire:target="doc_file"
+                                class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md disabled:opacity-50">Subir
+                                y Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     @endif
 
-    <!-- 4. Errores de validación de backend -->
-    @error('doc_file')
-        <span class="text-xs text-brand-pink font-bold mt-1 block">{{ $message }}</span>
-    @enderror
-</div>
-                    </div>
+    <!-- MODAL CREAR PERFIL ACADÉMICO UNLP -->
+    @if($showCreateAcademicModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm"
+                    wire:click="$set('showCreateAcademicModal', false)"></div>
+                <div
+                    class="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border-t-4 border-brand-cyan z-10 font-secondary text-xs">
+                    <form wire:submit="saveAcademicProfile">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900 uppercase flex items-center gap-2">
+                                <x-heroicon-o-academic-cap class="w-5 h-5 text-brand-cyan" /> Vincular Perfil Docente UNLP
+                            </h3>
+                            <button type="button" wire:click="$set('showCreateAcademicModal', false)"
+                                class="text-gray-400 hover:text-gray-600">
+                                <x-heroicon-o-x-mark class="w-5 h-5" />
+                            </button>
+                        </div>
 
-                    <div class="px-6 py-4 bg-white flex justify-end gap-3 border-t">
-                        <button type="button" wire:click="$set('showDocModal', false)"
-                            class="px-4 py-2 text-sm font-bold bg-gray-100 rounded-md">Cancelar</button>
-                        <!-- Deshabilitamos el botón durante la transferencia del archivo para evitar peticiones vacías -->
-                        <button type="submit" wire:loading.attr="disabled" wire:target="doc_file"
-                            class="px-4 py-2 text-sm font-bold text-white bg-brand-cyan rounded-md disabled:opacity-50">
-                            Subir y Guardar
-                        </button>
-                    </div>
-                </form>
+                        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                            <div>
+                                <label class="block font-bold text-gray-700 uppercase mb-1">Mail Institucional UNLP
+                                    *</label>
+                                <input type="email" wire:model="academic_unlp_email" placeholder="ejemplo@med.unlp.edu.ar"
+                                    class="w-full rounded-md border-gray-300 font-mono text-xs" required>
+                                @error('academic_unlp_email') <span
+                                class="text-brand-pink text-[10px] block mt-0.5">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Facultad *</label>
+                                    <input type="text" wire:model="academic_facultad"
+                                        class="w-full rounded-md border-gray-300" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Materia *</label>
+                                    <input type="text" wire:model="academic_materia" placeholder="Ej: Semiológica Médica"
+                                        class="w-full rounded-md border-gray-300" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Carrera / Cátedra *</label>
+                                    <input type="text" wire:model="academic_carrera_catedra"
+                                        placeholder="Ej: Medicina - Cátedra F" class="w-full rounded-md border-gray-300"
+                                        required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Cargo / Legajo UNLP
+                                        *</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" wire:model="academic_cargo_docente" placeholder="Cargo"
+                                            class="w-full rounded-md border-gray-300" required>
+                                        <input type="text" wire:model="academic_legajo_unlp" placeholder="Legajo"
+                                            class="w-full rounded-md border-gray-300">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Autoridad UNLP Firmante
+                                        *</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" wire:model="academic_autoridad_nombre" placeholder="Nombre"
+                                            class="w-full rounded-md border-gray-300" required>
+                                        <input type="text" wire:model="academic_autoridad_cargo" placeholder="Cargo"
+                                            class="w-full rounded-md border-gray-300" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Fecha Límite de Vigencia
+                                        *</label>
+                                    <input type="date" wire:model="academic_expires_at"
+                                        class="w-full rounded-md border-gray-300 font-mono text-xs" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                            <button type="button" wire:click="$set('showCreateAcademicModal', false)"
+                                class="px-4 py-2 bg-white border border-gray-300 text-gray-800 text-xs font-bold rounded-md">Cancelar</button>
+                            <button type="submit"
+                                class="px-5 py-2 bg-brand-cyan hover:bg-cyan-600 text-white rounded-md text-xs font-bold shadow-xs">Guardar
+                                e Incorporar</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-@endif
+    @endif
 
+    <!-- MODAL EDICIÓN DOCENTE UNLP -->
+    @if($showAcademicEditModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm"
+                    wire:click="$set('showAcademicEditModal', false)"></div>
+                <div
+                    class="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border-t-4 border-brand-cyan z-10 font-secondary text-xs">
+                    <form wire:submit="updateAcademicProfile">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900 uppercase">Editar Información Académica UNLP</h3>
+                            <button type="button" wire:click="$set('showAcademicEditModal', false)"
+                                class="text-gray-400 hover:text-gray-600">
+                                <x-heroicon-o-x-mark class="w-5 h-5" />
+                            </button>
+                        </div>
 
-    <!-- MODAL DE NOTAS -->
+                        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                            <div>
+                                <label class="block font-bold text-gray-700 uppercase mb-1">Mail UNLP *</label>
+                                <input type="email" wire:model="academic_unlp_email"
+                                    class="w-full rounded-md border-gray-300 font-mono text-xs" required>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Facultad *</label>
+                                    <input type="text" wire:model="academic_facultad"
+                                        class="w-full rounded-md border-gray-300" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Materia *</label>
+                                    <input type="text" wire:model="academic_materia"
+                                        class="w-full rounded-md border-gray-300" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Carrera / Cátedra *</label>
+                                    <input type="text" wire:model="academic_carrera_catedra"
+                                        class="w-full rounded-md border-gray-300" required>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Cargo / Legajo UNLP
+                                        *</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" wire:model="academic_cargo_docente"
+                                            class="w-full rounded-md border-gray-300" required>
+                                        <input type="text" wire:model="academic_legajo_unlp"
+                                            class="w-full rounded-md border-gray-300">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Autoridad UNLP Firmante
+                                        *</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" wire:model="academic_autoridad_nombre" placeholder="Nombre"
+                                            class="w-full rounded-md border-gray-300" required>
+                                        <input type="text" wire:model="academic_autoridad_cargo" placeholder="Cargo"
+                                            class="w-full rounded-md border-gray-300" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-gray-700 uppercase mb-1">Fecha Límite de Vigencia
+                                        *</label>
+                                    <input type="date" wire:model="academic_expires_at"
+                                        class="w-full rounded-md border-gray-300 font-mono text-xs" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                            <button type="button" wire:click="$set('showAcademicEditModal', false)"
+                                class="px-4 py-2 bg-white border border-gray-300 text-gray-800 text-xs font-bold rounded-md">Cancelar</button>
+                            <button type="submit"
+                                class="px-5 py-2 bg-brand-cyan hover:bg-cyan-600 text-white rounded-md text-xs font-bold shadow-xs">Guardar
+                                Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- MODAL NOTAS -->
     <div x-data="{ show: @entangle('showNoteModal') }" x-show="show" class="fixed inset-0 z-[100] overflow-y-auto"
         x-cloak aria-labelledby="modal-title" role="dialog" aria-modal="true">
 
         <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm" aria-hidden="true"
+            <div x-show="show" class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50 backdrop-blur-sm"
                 @click="show = false"></div>
-
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div x-show="show" x-transition:enter="ease-out duration-300"
-                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="show"
                 class="inline-block px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-xl shadow-2xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-200">
-
                 <form wire:submit="saveNote">
                     <div>
                         <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-                            <h3 class="text-lg font-bold leading-6 text-gray-800 font-secondary uppercase tracking-wide flex items-center gap-2" id="modal-title">
+                            <h3 class="text-lg font-bold leading-6 text-gray-800 font-secondary uppercase tracking-wide flex items-center gap-2"
+                                id="modal-title">
                                 <x-heroicon-o-document-text class="w-5 h-5 text-brand-cyan" />
                                 {{ $note_id ? 'Editar Nota' : 'Nueva Nota' }}
                             </h3>
-                            <button type="button" @click="show = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <button type="button" @click="show = false"
+                                class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <x-heroicon-o-x-mark class="w-5 h-5" />
                             </button>
                         </div>
 
                         <div class="mt-2 space-y-5">
                             <div>
-                                <label for="note_title" class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Título / Asunto</label>
+                                <label for="note_title"
+                                    class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Título
+                                    / Asunto</label>
                                 <input type="text" wire:model="note_title" id="note_title"
                                     class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan focus:ring-brand-cyan sm:text-sm font-secondary transition-colors"
                                     placeholder="Ej: Observación sobre legajo">
-                                @error('note_title') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                @error('note_title') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                                @enderror
                             </div>
 
                             <div>
-                                <label for="note_content" class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Contenido de la nota</label>
+                                <label for="note_content"
+                                    class="block text-[11px] font-bold text-gray-700 font-secondary uppercase tracking-wider mb-1">Contenido
+                                    de la nota</label>
                                 <textarea wire:model="note_content" id="note_content" rows="5"
                                     class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-cyan focus:ring-brand-cyan sm:text-sm font-secondary transition-colors"
                                     placeholder="Escribe el detalle completo aquí..."></textarea>
-                                @error('note_content') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                @error('note_content') <span
+                                class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-6 sm:mt-8 sm:flex sm:flex-row-reverse gap-3 bg-gray-50 -mx-6 -mb-6 px-6 py-4 border-t border-gray-100">
-                        <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-bold text-white transition-colors border border-transparent rounded-md shadow-sm bg-brand-cyan hover:bg-cyan-600 focus:outline-none sm:w-auto uppercase tracking-wide font-secondary">
+                    <div
+                        class="mt-6 sm:mt-8 sm:flex sm:flex-row-reverse gap-3 bg-gray-50 -mx-6 -mb-6 px-6 py-4 border-t border-gray-100">
+                        <button type="submit"
+                            class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-bold text-white transition-colors border border-transparent rounded-md shadow-sm bg-brand-cyan hover:bg-cyan-600 focus:outline-none sm:w-auto uppercase tracking-wide font-secondary">
                             Guardar Nota
                         </button>
-                        <button type="button" @click="show = false" class="mt-3 w-full inline-flex justify-center items-center px-4 py-2 text-sm font-bold text-gray-700 transition-colors bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto uppercase tracking-wide font-secondary">
+                        <button type="button" @click="show = false"
+                            class="mt-3 w-full inline-flex justify-center items-center px-4 py-2 text-sm font-bold text-gray-700 transition-colors bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto uppercase tracking-wide font-secondary">
                             Cancelar
                         </button>
                     </div>
@@ -1238,40 +1782,42 @@
         </div>
     </div>
 
-    <!-- MODAL DE ASIGNACIÓN MASIVA DE AGENDAS HSI -->
-    <!-- MODAL DE ASIGNACIÓN MASIVA DE AGENDAS HSI -->
+    <!-- MODAL ASIGNACIÓN MASIVA DE AGENDAS HSI -->
     <div x-data="{
-        showModal: @entangle('showAccessModal'),
-        searchQuery: '',
-        allUnits: @js($hierarchicalUnits->map(fn($u) => ['id' => $u->id, 'name' => mb_strtolower($u->alias ?? $u->name)])),
-        get filteredIds() {
-            if (!this.searchQuery.trim()) {
-                return this.allUnits.map(u => u.id);
-            }
-            let q = this.searchQuery.toLowerCase();
-            return this.allUnits.filter(u => u.name.includes(q)).map(u => u.id);
-        },
-        toggleAllVisible(check) {
-            let visible = this.filteredIds;
-            let current = new Set(@entangle('selected_access_units'));
-            visible.forEach(id => {
-                if (check) current.add(id);
-                else current.delete(id);
-            });
-            $wire.set('selected_access_units', Array.from(current));
+    showModal: @entangle('showAccessModal'),
+    searchQuery: '',
+    allUnits: @js($hierarchicalUnits->map(fn($u) => ['id' => (int) $u->id, 'name' => mb_strtolower($u->alias ?? $u->name)])),
+    get filteredIds() {
+        if (!this.searchQuery.trim()) {
+            return this.allUnits.map(u => u.id);
         }
-    }"
-    x-show="showModal"
-    x-cloak
-    class="fixed inset-0 z-[160] overflow-y-auto"
-    role="dialog"
-    aria-modal="true">
+        let q = this.searchQuery.toLowerCase();
+        return this.allUnits.filter(u => u.name.includes(q)).map(u => u.id);
+    },
+    toggleAllVisible(check) {
+        let visible = this.filteredIds;
+        let rawSelected = $wire.selected_access_units || [];
+        let current = new Set(rawSelected.map(id => Number(id)));
+
+        visible.forEach(id => {
+            let numericId = Number(id);
+            if (check) {
+                current.add(numericId);
+            } else {
+                current.delete(numericId);
+            }
+        });
+
+        $wire.selected_access_units = Array.from(current);
+    }
+}" x-show="showModal" x-cloak class="fixed inset-0 z-[160] overflow-y-auto" role="dialog" aria-modal="true">
 
         <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity" @click="showModal = false"></div>
 
         <div class="flex min-h-screen items-center justify-center p-4 relative z-10 pointer-events-none">
-            <div class="pointer-events-auto relative w-full max-w-3xl transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all border-t-4 border-brand-blue flex flex-col max-h-[88vh]">
-                
+            <div
+                class="pointer-events-auto relative w-full max-w-3xl transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all border-t-4 border-brand-blue flex flex-col max-h-[88vh]">
+
                 <div class="bg-white px-6 py-5 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2 font-secondary">
@@ -1287,12 +1833,13 @@
                     </p>
                 </div>
 
-                <!-- BARRA DE BÚSQUEDA Y ACCIONES RÁPIDAS -->
-                <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div
+                    class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div class="relative w-full sm:max-w-xs">
                         <input x-model="searchQuery" type="text" placeholder="Filtrar unidades..."
                             class="w-full text-xs pl-8 pr-3 py-1.5 rounded-md border-gray-300 shadow-sm focus:border-brand-blue focus:ring-brand-blue font-secondary">
-                        <x-heroicon-o-magnifying-glass class="w-4 h-4 text-gray-400 absolute left-2.5 top-2 pointer-events-none" />
+                        <x-heroicon-o-magnifying-glass
+                            class="w-4 h-4 text-gray-400 absolute left-2.5 top-2 pointer-events-none" />
                     </div>
 
                     <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -1307,11 +1854,9 @@
                     </div>
                 </div>
 
-                <!-- LISTADO CON CHECKBOXES -->
                 <div class="p-6 overflow-y-auto flex-1 bg-white space-y-1">
                     @foreach($hierarchicalUnits as $unit)
-                        <label wire:key="chk-acc-{{ $unit->id }}"
-                            x-show="filteredIds.includes({{ $unit->id }})"
+                        <label wire:key="chk-acc-{{ $unit->id }}" x-show="filteredIds.includes({{ $unit->id }})"
                             class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition-colors">
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" wire:model="selected_access_units" value="{{ $unit->id }}"
@@ -1328,10 +1873,10 @@
                     @endforeach
                 </div>
 
-                <!-- FOOTER -->
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                     <span class="text-xs text-gray-600 font-secondary">
-                        Seleccionadas: <strong class="text-brand-blue">{{ count($selected_access_units) }}</strong> unidades
+                        Seleccionadas: <strong class="text-brand-blue">{{ count($selected_access_units) }}</strong>
+                        unidades
                     </span>
 
                     <div class="flex items-center gap-3">

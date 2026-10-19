@@ -224,4 +224,20 @@ class Agent extends Model
         ->withTimestamps()
         ->whereNull('agent_hierarchical_unit_access.deleted_at');
     }
+
+    /**
+     * Perfil académico/universitario (UNLP) del agente.
+     */
+    public function academicProfile()
+    {
+        return $this->hasOne(AcademicAgent::class, 'agent_id');
+    }
+
+    /**
+     * Evalúa si el agente es un docente universitario registrado.
+     */
+    public function getIsAcademicAttribute(): bool
+    {
+        return $this->academicProfile()->exists();
+    }
 }

@@ -18,6 +18,7 @@ use App\Http\Controllers\Agents\AgentImportController;
 use App\Models\MikyTerminal;
 use App\Services\MikyMeshService;
 use App\Livewire\Miky\MikyDashboard;
+use App\Livewire\Academic\AcademicIndex;
 
 Route::view('/', 'dashboard')
     ->middleware(['auth', 'verified'])
@@ -99,6 +100,9 @@ Route::middleware(['auth'])->group(function () {
     })->name('miky.screenshot');
 });
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/academic', AcademicIndex::class)->name('academic.index');
+});
 
 // Route::prefix('admin/configuracion')->middleware(['auth', 'role:Administrador'])->group(function () {
 //     Route::get('/', ConfigIndex::class)->name('admin.config.index');

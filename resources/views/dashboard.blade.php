@@ -49,6 +49,13 @@
                         'allowed'     => true,
                     ],
                     [
+                        'title'       => 'Acceso universidad',
+                        'description' => 'Gestión de agentes y control de credenciales agentes UNLP.',
+                        'route'       => route('academic.index'),
+                        'custom_icon' => asset('img/logo-unlp.svg'),
+                        'allowed'     => true,
+                    ],
+                    [
                         'title'       => 'Estructura Profesional',
                         'description' => 'Administración de profesiones, especialidades y vinculación de roles.',
                         'route'       => route('system.config'),
@@ -94,8 +101,12 @@
                         class="block bg-white overflow-hidden shadow-sm sm:rounded-xl border-t-4 {{ $theme['border'] }} hover:shadow-md hover:-translate-y-1 transition-all duration-200 group">
                         <div class="p-6">
                             <div class="flex items-center justify-between mb-4">
-                                <div class="{{ $theme['icon_bg'] }} p-3 rounded-lg transition-colors duration-200">
-                                    <x-dynamic-component :component="$module['icon']" class="w-8 h-8 {{ $theme['icon_text'] }} transition-colors" />
+                                <div class="{{ $theme['icon_bg'] }} p-3 rounded-lg transition-colors duration-200 flex items-center justify-center w-14 h-14">
+                                    @if(isset($module['custom_icon']))
+                                        <img src="{{ $module['custom_icon'] }}" alt="{{ $module['title'] }}" class="w-8 h-8 object-contain transition-transform group-hover:scale-105" />
+                                    @else
+                                        <x-dynamic-component :component="$module['icon']" class="w-8 h-8 {{ $theme['icon_text'] }} transition-colors" />
+                                    @endif
                                 </div>
                                 <x-heroicon-m-arrow-up-right class="w-5 h-5 text-gray-300 {{ $theme['arrow_text'] }} transition-colors" />
                             </div>
