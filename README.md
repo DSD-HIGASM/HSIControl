@@ -76,3 +76,14 @@ Para facilitar la instalación en cualquier institución, el proceso de sembrado
 * **Contraseña:** `password`
 
 > **⚠️ IMPORTANTE:** Por razones estrictas de seguridad, la primera acción tras un despliegue exitoso debe ser ingresar con esta cuenta, dar de alta al administrador real del sistema (con su DNI auténtico), asignarle los privilegios totales y, finalmente, **eliminar** la cuenta genérica `12345678` de la base de datos.
+
+## API de profesionales
+
+La API permite buscar profesionales por nombre y apellido. Requiere autenticación mediante Sanctum y devuelve los datos del agente junto con su servicio, profesiones, especialidades, matrículas y perfil académico.
+
+```http
+GET /api/professionals?first_name=Ana&last_name=Pérez
+Authorization: Bearer YOUR_SANCTUM_TOKEN
+```
+
+`first_name` y `last_name` son obligatorios. Se puede precisar la búsqueda con `second_first_name` y `second_last_name`. La respuesta contiene los resultados en `data` y la cantidad en `total`; si no hay coincidencias, `data` será una lista vacía. Los nombres se comparan sin distinguir mayúsculas/minúsculas.

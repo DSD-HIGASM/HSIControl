@@ -2,6 +2,7 @@
 use Illuminate\Http\Request;
 use App\Models\PreRegistration;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AgentRequest;
 use App\Http\Controllers\Api\HsiSyncController;
 
 Route::middleware('auth:sanctum')->post('/pre-register', function (Request $request) {
@@ -15,5 +16,6 @@ Route::middleware('auth:sanctum')->post('/pre-register', function (Request $requ
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/professionals', [AgentRequest::class, 'index'])->name('api.professionals.index');
     Route::post('/hsi-sync', [HsiSyncController::class, 'store'])->name('api.hsi_sync.store');
 });
