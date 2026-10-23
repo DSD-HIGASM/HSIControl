@@ -79,11 +79,11 @@ Para facilitar la instalación en cualquier institución, el proceso de sembrado
 
 ## API de profesionales
 
-La API permite buscar profesionales por nombre y apellido. Requiere autenticación mediante Sanctum y devuelve los datos del agente junto con su servicio, profesiones, especialidades, matrículas y perfil académico.
+La API permite buscar profesionales con un único término flexible. Requiere un token personal de Sanctum y devuelve los datos del agente junto con su servicio, profesiones, especialidades, matrículas y perfil académico.
 
 ```http
-GET /api/professionals?first_name=Ana&last_name=Pérez
+GET /api/professionals?search=Ana%20Pérez
 Authorization: Bearer YOUR_SANCTUM_TOKEN
 ```
 
-`first_name` y `last_name` son obligatorios. Se puede precisar la búsqueda con `second_first_name` y `second_last_name`. La respuesta contiene los resultados en `data` y la cantidad en `total`; si no hay coincidencias, `data` será una lista vacía. Los nombres se comparan sin distinguir mayúsculas/minúsculas.
+El token debe ser el valor completo que muestra HSIControl al generarlo, incluido el prefijo numérico y el separador `|`, enviado en el encabezado `Authorization` con el esquema `Bearer`. No se debe enviar como `X-API-Key` ni como parámetro de la URL. `search` es obligatorio y busca coincidencias parciales, sin distinguir mayúsculas ni acentos, en los nombres, apellidos, DNI y teléfono. La respuesta contiene los resultados en `data` y la cantidad en `total`; si no hay coincidencias, `data` será una lista vacía.

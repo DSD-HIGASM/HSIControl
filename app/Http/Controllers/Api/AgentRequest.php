@@ -12,36 +12,50 @@ class AgentRequest extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'second_first_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'second_last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'search' => ['required', 'string', 'max:255'],
         ]);
 
-        $agents = Agent::query()
+        $search = mb_strtolower(trim($filters['search']), 'UTF-8');
+        $search = str_replace(
+            ['á', 'é', 'í', 'ó', 'ú', 'ä', 'ë', 'ï', 'ö', 'ü'],
+            ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u'],
+            $search
+        );
+        $terms = preg_split('/\s+/', $search);
+        $normalizeSql = function (string $column): string {
+            return "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER({$column}), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u'), 'Á', 'a'), 'É', 'e'), 'Í', 'i'), 'Ó', 'o'), 'Ú', 'u')";
+        };
+
+        $query = Agent::query()
             ->with([
                 'service',
                 'agentProfessions.profession',
                 'agentProfessions.specialty',
                 'agentProfessions.registrations',
                 'academicProfile',
-            ])
-            ->whereRaw('LOWER(first_name) = ?', [mb_strtolower($filters['first_name'])])
-            ->whereRaw('LOWER(last_name) = ?', [mb_strtolower($filters['last_name'])])
-            ->when(
-                filled($filters['second_first_name'] ?? null),
-                fn ($query) => $query->whereRaw(
-                    'LOWER(second_first_name) = ?',
-                    [mb_strtolower($filters['second_first_name'])]
-                )
-            )
-            ->when(
-                filled($filters['second_last_name'] ?? null),
-                fn ($query) => $query->whereRaw(
-                    'LOWER(second_last_name) = ?',
-                    [mb_strtolower($filters['second_last_name'])]
-                )
-            )
+            ]);
+
+        $query->where(function ($query) use ($terms, $normalizeSql) {
+            foreach ($terms as $term) {
+                $numericTerm = preg_replace('/[^0-9]/', '', $term);
+
+                $query->where(function ($termQuery) use ($term, $numericTerm, $normalizeSql) {
+                    if ($numericTerm !== '') {
+                        $termQuery->where('dni', 'like', "%{$numericTerm}%");
+                    } else {
+                        $termQuery->whereRaw('1 = 0');
+                    }
+
+                    $termQuery->orWhereRaw($normalizeSql('last_name').' LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw($normalizeSql('second_last_name').' LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw($normalizeSql('first_name').' LIKE ?', ["%{$term}%"])
+                        ->orWhereRaw($normalizeSql('second_first_name').' LIKE ?', ["%{$term}%"])
+                        ->orWhere('phone', 'like', '%'.($numericTerm !== '' ? $numericTerm : $term).'%');
+                });
+            }
+        });
+
+        $agents = $query
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get();

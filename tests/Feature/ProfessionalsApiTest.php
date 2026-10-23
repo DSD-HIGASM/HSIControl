@@ -17,7 +17,7 @@ class ProfessionalsApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_request_returns_professionals_matching_their_names(): void
+    public function test_authenticated_request_searches_professionals_with_one_flexible_query(): void
     {
         $this->actingAs(User::create([
             'dni' => '10000001',
@@ -46,7 +46,7 @@ class ProfessionalsApiTest extends TestCase
             'status' => 'activo',
         ]);
 
-        $this->getJson('/api/professionals?first_name=ANA&last_name=pÉREZ')
+        $this->getJson('/api/professionals?search=pez%20ana')
             ->assertOk()
             ->assertJsonPath('total', 1)
             ->assertJsonPath('data.0.id', $agent->id)
@@ -54,21 +54,21 @@ class ProfessionalsApiTest extends TestCase
             ->assertJsonPath('data.0.agent_professions', []);
     }
 
-    public function test_professional_search_requires_first_and_last_names(): void
+    public function test_professional_search_requires_a_search_string(): void
     {
         $this->actingAs(User::create([
             'dni' => '10000001',
             'password' => 'password',
         ]));
 
-        $this->getJson('/api/professionals?first_name=Ana')
+        $this->getJson('/api/professionals')
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['last_name']);
+            ->assertJsonValidationErrors(['search']);
     }
 
     public function test_professional_search_requires_authentication(): void
     {
-        $this->getJson('/api/professionals?first_name=Ana&last_name=Pérez')
+        $this->getJson('/api/professionals?search=Ana%20Pérez')
             ->assertUnauthorized();
     }
 
@@ -80,13 +80,13 @@ class ProfessionalsApiTest extends TestCase
         ]);
 
         $this->withToken($user->createToken('api-test')->plainTextToken)
-            ->getJson('/api/professionals?first_name=Ana&last_name=Pérez')
+            ->getJson('/api/professionals?search=Ana%20Pérez')
             ->assertOk()
             ->assertJsonPath('data', [])
             ->assertJsonPath('total', 0);
     }
 
-    public function test_second_names_can_be_used_to_narrow_the_search(): void
+    public function test_all_name_parts_can_be_matched_in_any_order(): void
     {
         $this->actingAs(User::create([
             'dni' => '10000003',
@@ -104,7 +104,7 @@ class ProfessionalsApiTest extends TestCase
             'second_last_name' => 'López',
         ]);
 
-        $this->getJson('/api/professionals?first_name=Ana&last_name=Pérez&second_first_name=María&second_last_name=Gómez')
+        $this->getJson('/api/professionals?search=Gómez%20mar%20ana')
             ->assertOk()
             ->assertJsonPath('total', 1)
             ->assertJsonPath('data.0.id', $matchingAgent->id);
@@ -148,7 +148,7 @@ class ProfessionalsApiTest extends TestCase
             'expires_at' => '2027-12-31',
         ]);
 
-        $this->getJson('/api/professionals?first_name=Ana&last_name=Pérez')
+        $this->getJson('/api/professionals?search=Ana%20Pérez')
             ->assertOk()
             ->assertJsonPath('data.0.service.name', 'Clínica')
             ->assertJsonPath('data.0.agent_professions.0.profession.name', 'Médica')
@@ -157,20 +157,43 @@ class ProfessionalsApiTest extends TestCase
             ->assertJsonPath('data.0.academic_profile.facultad', 'Ciencias Médicas');
     }
 
-    public function test_professional_search_requires_both_names_as_strings(): void
+    public function test_professional_search_requires_a_string_query(): void
     {
         $this->actingAs(User::create([
             'dni' => '10000005',
             'password' => 'password',
         ]));
 
-        $this->getJson('/api/professionals?first_name[]=Ana&last_name=Pérez')
+        $this->getJson('/api/professionals?search[]=Ana')
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['first_name']);
+            ->assertJsonValidationErrors(['search']);
 
-        $this->getJson('/api/professionals?first_name=Ana&last_name=')
+        $this->getJson('/api/professionals?search=')
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['last_name']);
+            ->assertJsonValidationErrors(['search']);
+    }
+
+    public function test_search_matches_partial_document_and_phone_numbers(): void
+    {
+        $this->actingAs(User::create([
+            'dni' => '10000006',
+            'password' => 'password',
+        ]));
+
+        $agent = $this->createAgent([
+            'dni' => 12345678,
+            'phone' => '2215551234',
+        ]);
+
+        $this->getJson('/api/professionals?search=3456')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.id', $agent->id);
+
+        $this->getJson('/api/professionals?search=5551')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.id', $agent->id);
     }
 
     private function createAgent(array $overrides = []): Agent
